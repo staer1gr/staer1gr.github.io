@@ -105,6 +105,8 @@ sup{font-size:.62em; line-height:0; vertical-align:.5em}
 .sheetbar .prog{font-size:.84rem; color:var(--muted); font-variant-numeric:tabular-nums}
 .sheetbar .prog b{color:var(--ink)}
 .qlist{display:grid; gap:10px; margin-top:14px}
+.grp{margin:10px 0 -2px; font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+.grp:first-child{margin-top:0}
 .q{background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:var(--radius); padding:14px 16px}
 .q.filled{border-left-color:var(--accent)}
 .qhead{display:flex; align-items:baseline; gap:10px}
@@ -179,7 +181,7 @@ input[type=text]:focus{border-color:var(--accent)}
   <div class="masthead">
     <a class="backlink" href="../">&larr; Stærðfræðiæfingar</a>
     <h1>Æfingapróf í þáttun</h1>
-    <p class="tagline">Tíu dæmi, blönduð úr öllum þrem aðferðum. Þú fær engin svör fyrr en þú skilar.</p>
+    <p class="tagline">Tíu dæmi í erfiðleikaröð, öll með breytunni <var>x</var>. Þú fær engin svör fyrr en þú skilar.</p>
   </div>
 
   <!-- ══════════ KYNNING ══════════ -->
@@ -188,16 +190,17 @@ input[type=text]:focus{border-color:var(--accent)}
       <h2>Áður en þú byrjar</h2>
       <ol class="rules">
         <li>Tíu dæmi. Hvert dæmi gildir <strong>1 stig</strong>, svo einkunnin er fjöldi réttra svara.</li>
-        <li>Þú velur sjálfur röðina og getur breytt svörum þangað til þú skilar.</li>
+        <li>Dæmin eru í erfiðleikaröð, en þú mátt svara í hvaða röð sem er og getur breytt svörum þangað til þú skilar.</li>
         <li><strong>Engin svör birtast meðan á prófinu stendur.</strong> Þú sérð hvað var rétt og rangt fyrst þegar þú skilar — eins og á prófi.</li>
         <li>Klukkan í horninu byrjar þegar þú ýtir á hnappinn. Hún stoppar þig ekki; hún er til þess að þú sjáir hvað þú ert lengi.</li>
         <li>Svarið á að vera <strong>fullþáttað</strong>. Hálf þáttun telst ekki rétt.</li>
       </ol>
 
       <div class="kinds">
-        <div class="kind"><span class="kn">Út fyrir sviga</span><span class="ke">14xy + 7y</span></div>
-        <div class="kind"><span class="kn">Samokareglan</span><span class="ke">16x&sup2; &minus; 4</span></div>
-        <div class="kind"><span class="kn">Ágiskun</span><span class="ke">x&sup2; + 5x &minus; 14</span></div>
+        <div class="kind"><span class="kn">1&ndash;2. Út fyrir sviga</span><span class="ke">14x&sup2; + 7x</span></div>
+        <div class="kind"><span class="kn">3&ndash;4. Samokareglan</span><span class="ke">9x&sup2; &minus; 4</span></div>
+        <div class="kind"><span class="kn">5&ndash;8. Ágiskun</span><span class="ke">x&sup2; + 5x &minus; 14</span></div>
+        <div class="kind"><span class="kn">9&ndash;10. Út fyrir sviga og svo þáttun</span><span class="ke">3x&sup2; &minus; 27</span></div>
       </div>
 
       <button class="btn big" id="startbtn" type="button">Byrja prófið</button>
@@ -468,7 +471,7 @@ function reducible(P){
 }
 
 /* ════════ dæmasmiðir ════════ */
-var VARS=["x","y","a","b","k","t","r","s","m","n","p","q","c","z","h"];
+var VARS=["x"];   /* eingöngu x */
 function rnd(n){return Math.floor(Math.random()*n)}
 function pick(a){return a[rnd(a.length)]}
 function shuffled(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=rnd(i+1),t=b[i];b[i]=b[j];b[j]=t}return b}
@@ -509,6 +512,18 @@ var U3={n:2,nvars:3,gc:[2,3,4,5,6,7,9,10,15],gnv:[1,2],cc:[1,2,3,4,5,6,7],cnv:[0
 var U4={n:3,nvars:3,gc:[1,2,2,3,3,4,5,7],gnv:[1,2],cc:[1,2,3,4,5],cnv:[0,2],neg:.4,one:.3};
 var U5={n:2,nvars:2,gc:[1,2,3,4,5,6,7,9,12,15],gnv:[1,2],ge:[1,2],cc:[1,2,3,4,5,6,8,15],cnv:[0,2],ce:[1,2],neg:.4,one:.15};
 var U6={n:3,nvars:3,gc:[1,2,3,4,5],gnv:[2,3],ge:[1,2],cc:[1,2,3,4,5,8],cnv:[0,2],ce:[1,2],neg:.4,one:.35};
+var UT1={n:2,nvars:1,gc:[2,3,4,5,6,7,8,9],gnv:[0,1],ge:[1,1],cc:[1,2,3,4,5,7],cnv:[0,1],ce:[1,2],neg:.4};
+var UT2={n:3,nvars:1,gc:[2,3,4,5,6],gnv:[1,1],ge:[1,2],cc:[1,2,3,4,5,7],cnv:[0,1],ce:[1,3],neg:.4,one:.3};
+/* Liðum raðað eftir lækkandi veldi; fyrsti liður skal vera jákvæður. */
+function buildSorted(sp){
+  for(var att=0;att<200;att++){
+    var raw=build(sp),idx=raw.terms.map(function(_,i){return i});
+    idx.sort(function(a,b){return deg(raw.terms[b])-deg(raw.terms[a])});
+    var terms=idx.map(function(i){return raw.terms[i]}),cofs=idx.map(function(i){return raw.cofs[i]});
+    if(terms[0].c>0)return{terms:terms,gcd:raw.gcd,cofs:cofs};
+  }
+  return build(sp);
+}
 function wrapUt(raw){
   /* upprunaleg röð er notuð, bæði á liðunum og inni í sviganum:
      hún tryggir að fyrsti liður sé jákvæður. pNorm myndi umraða. */
@@ -539,6 +554,9 @@ function s4(){var v=pick(VARS),c=pick([1,1,1,2,3,5]),m=1+rnd(3),k=1+rnd(7);
 function s5(){var v,a,b,c;
   do{v=pick(VARS);a=2+rnd(7);b=1+rnd(10);c=pick([1,1,1,2,3,4,5])}while(gcd(a,b)!==1||c*a*a>150||c*b*b>150);
   return mkS({c:c,v:{}},[lin(v,a,b,-1),lin(v,a,b,1)],false,[{c:a,v:kv(v,1)}],[{c:b,v:{}}])}
+function s5p(){var a,b;
+  do{a=2+rnd(6);b=1+rnd(9)}while(gcd(a,b)!==1||a*a>64||b*b>81);
+  return mkS({c:1,v:{}},[lin("x",a,b,-1),lin("x",a,b,1)],false,[{c:a,v:kv("x",1)}],[{c:b,v:{}}])}
 function s6(){var v=pick(VARS),c=pick([1,1,1,2,3]),k=1+rnd(3);
   return mkS({c:c,v:{}},[lin(v,1,k,-1),lin(v,1,k,1),[{c:1,v:kv(v,2)},{c:k*k,v:{}}]],
              false,[{c:1,v:kv(v,2)}],[{c:k*k,v:{}}],true)}
@@ -565,19 +583,24 @@ function a5(){
   return mkA(c0,base.vn,base.s,base.t);
 }
 
-/* ════════ prófgrind: 10 dæmi, blönduð ════════ */
+/* ════════ prófgrind: 10 dæmi í erfiðleikaröð ════════ */
+function tag(cat,f){return function(){var p=f();p.cat=cat;return p}}
 var BLUEPRINT=[
-  function(){return wrapUt(build(pick([U1,U2])))},
-  function(){return wrapUt(build(U3))},
-  function(){return wrapUt(build(pick([U4,U5,U6])))},
-  s1,
-  function(){return pick([s2,s3])()},
-  function(){return pick([s4,s5,s6])()},
-  a1, a2, a3,
-  function(){return pick([a4,a5,a5])()}
+  tag("ut",function(){return wrapUt(buildSorted(UT1))}),     /* 1  út fyrir sviga, 2 liðir */
+  tag("ut",function(){return wrapUt(buildSorted(UT2))}),     /* 2  út fyrir sviga, 3 liðir */
+  tag("sam",s1),                                             /* 3  x² − k² */
+  tag("sam",s5p),                                            /* 4  a²x² − b² */
+  tag("agi",a1),                                             /* 5  báðar tölur jákvæðar */
+  tag("agi",a2),                                             /* 6  báðar tölur neikvæðar */
+  tag("agi",a3),                                             /* 7  ólík formerki */
+  tag("agi",a3),                                             /* 8  ólík formerki */
+  tag("bland",function(){return pick([s2,s4])()}),           /* 9  sameiginlegt út + samoka */
+  tag("bland",a5)                                            /* 10 sameiginlegt út + ágiskun */
 ];
 var KINDNM={ut:"Út fyrir sviga",sam:"Samokareglan",agi:"Ágiskun"};
-var KINDURL={ut:"../thattun/",sam:"../samoka/",agi:"../agiskun/"};
+var CATNM={ut:"Út fyrir sviga",sam:"Samokareglan",agi:"Ágiskun",bland:"Út fyrir sviga og svo þáttun"};
+var CATS=["ut","sam","agi","bland"];
+var KINDURL={ut:"../thattun/",sam:"../samoka/",agi:"../agiskun/",bland:null};
 
 function makeExam(){
   var qs=[],seen={},i,att;
@@ -591,7 +614,7 @@ function makeExam(){
       if(att===79){seen[key]=1;qs.push(p)}
     }
   }
-  return shuffled(qs);
+  return qs;   /* erfiðleikaröð, ekki stokkað */
 }
 
 /* ════════ lausnir ════════ */
@@ -734,6 +757,7 @@ function updateProg(){
 function renderSheet(){
   var h="",i;
   for(i=0;i<exam.length;i++){
+    if(i===0||exam[i].cat!==exam[i-1].cat)h+='<div class="grp">'+CATNM[exam[i].cat]+'</div>';
     h+='<div class="q"><div class="qhead"><span class="qno">'+(i+1)+
        '.</span><span class="qex">'+pHtml(exam[i].terms)+'</span></div>'+
        '<div class="qin"><span class="eq">=</span>'+
@@ -766,14 +790,14 @@ function handIn(){
     return;
   }
   stopClock();
-  var res=[],right=0,by={ut:[0,0],sam:[0,0],agi:[0,0]},i;
+  var res=[],right=0,by={ut:[0,0],sam:[0,0],agi:[0,0],bland:[0,0]},i;
   for(i=0;i<exam.length;i++){
     var raw=$("in"+i).value.trim();
     var r=raw?check(raw,exam[i]):{status:"empty"};
     var ok=(r.status==="correct");
     if(ok)right++;
-    by[exam[i].kind][1]++;
-    if(ok)by[exam[i].kind][0]++;
+    by[exam[i].cat][1]++;
+    if(ok)by[exam[i].cat][0]++;
     res.push({raw:raw,r:r,ok:ok});
   }
   store.taken++;
@@ -795,18 +819,18 @@ function renderResult(res,right,by){
         (right>0?" · um "+fmt(Math.round(elapsed/10))+" á dæmi":"")+"</p></div></div>";
 
   h+='<div class="bytype">';
-  var ks=["ut","sam","agi"];
+  var ks=CATS;
   for(i=0;i<ks.length;i++){
     var k=ks[i],a=by[k][0],b=by[k][1],pct=b?Math.round(a/b*100):0;
-    h+='<div class="bt"><span class="btn2">'+KINDNM[k]+'</span>'+
+    h+='<div class="bt"><span class="btn2">'+CATNM[k]+'</span>'+
        '<span class="bar"><i style="width:'+pct+'%"></i></span>'+
        '<span class="cnt">'+a+"/"+b+"</span>"+
-       (a<b?'<a href="'+KINDURL[k]+'">æfa</a>':"<a style=\"visibility:hidden\">æfa</a>")+"</div>";
+       (a<b&&KINDURL[k]?'<a href="'+KINDURL[k]+'">æfa</a>':"<a style=\"visibility:hidden\">æfa</a>")+"</div>";
   }
   h+="</div>";
 
   var weak=[];
-  for(i=0;i<ks.length;i++)if(by[ks[i]][0]<by[ks[i]][1])weak.push(KINDNM[ks[i]].toLowerCase());
+  for(i=0;i<ks.length;i++)if(by[ks[i]][0]<by[ks[i]][1])weak.push(CATNM[ks[i]].toLowerCase());
   h+='<p class="verdict">'+(
     right===10 ? "Allt rétt. Þú ert með efnið á valdi þínu."
     : right>=8 ? "Sterkt. Það sem vantar er "+weak.join(" og ")+" — farðu í fimihlutann þar og taktu tíu í röð."
