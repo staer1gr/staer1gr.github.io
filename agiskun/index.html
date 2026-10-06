@@ -171,8 +171,8 @@ input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; bord
 
   <div class="controls">
     <div class="seg" role="group" aria-label="Hluti">
-      <button type="button" id="mode-learn" aria-pressed="true">Æfingahluti</button>
-      <button type="button" id="mode-drill" aria-pressed="false">Fimihluti</button>
+      <button type="button" id="mode-learn" aria-pressed="false">Æfingahluti</button>
+      <button type="button" id="mode-drill" aria-pressed="true">Fimihluti</button>
     </div>
     <select id="levelsel" aria-label="Þyngdarstig"></select>
   </div>
@@ -534,7 +534,7 @@ function curStat(){return stat(mode==="drill"?"drill":lvl)}
 /* ---------------- viðmót ---------------- */
 function $(id){return document.getElementById(id)}
 var lvl=Math.min(Math.max(store.lvl|0,0),LEVELS.length-1);
-var mode=store.mode==="drill"?"drill":"learn";
+var mode="drill";   /* síðan opnast alltaf í fimihluta */
 var prob=null,streak=0,hintStep=0,shownAt=0,times=[],answered=false;
 
 var sel=$("levelsel");
