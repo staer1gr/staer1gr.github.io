@@ -123,6 +123,15 @@ input[type=text]:focus{border-color:var(--accent)}
 .submitrow{margin-top:18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 .warn{background:var(--bad-soft); border:1px solid var(--bad); border-radius:8px; padding:11px 13px; margin-top:14px; font-size:.92rem}
 .warn p{margin:.2rem 0}
+.keys{display:flex; gap:5px; align-items:center}
+.keys button.k{font-family:var(--font-math); font-size:1rem; width:2.1rem; height:2.1rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer; padding:0}
+.keys button.pow{width:2.5rem; color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button sup{font-size:.65em; vertical-align:.55em; line-height:0}
+.preview{margin-top:6px; padding-left:1.6em; font-size:.82rem; color:var(--muted)}
+.preview .plab{text-transform:uppercase; letter-spacing:.08em; font-weight:600; font-size:.72rem}
+.preview .pv{font-family:var(--font-math); font-size:1.3rem; color:var(--ink)}
+.preview .pv sup{font-size:.62em; vertical-align:.55em; line-height:0}
+
 
 /* ---- niðurstöður ---- */
 .score{margin-top:18px; background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:20px 18px; box-shadow:0 1px 2px rgba(0,0,0,.04)}
@@ -212,6 +221,13 @@ input[type=text]:focus{border-color:var(--accent)}
   <div id="screen-sheet" hidden>
     <div class="sheetbar">
       <span class="prog" id="prog"></span>
+      <span class="keys" id="keys">
+        <button type="button" class="k pow" data-ins="^2" aria-label="Í öðru veldi">&#9633;<sup>2</sup></button>
+        <button type="button" class="k pow" data-ins="^3" aria-label="Í þriðja veldi">&#9633;<sup>3</sup></button>
+        <button type="button" class="k pow" data-ins="^4" aria-label="Í fjórða veldi">&#9633;<sup>4</sup></button>
+        <button type="button" class="k" data-ins="(" aria-label="Opna sviga">(</button>
+        <button type="button" class="k" data-ins=")" aria-label="Loka sviga">)</button>
+      </span>
       <button class="btn" id="handin" type="button">Skila prófi</button>
     </div>
     <div id="warnbox" hidden></div>
@@ -329,7 +345,8 @@ function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 
 /* ════════ þáttari á innslegnu svari ════════ */
 function parseFull(raw){
-  var s=raw.replace(/\s+/g,"").replace(/[·×∙*]/g,"*").replace(/[−–—]/g,"-")
+  var s=raw.replace(/[²³⁴⁵⁶⁷⁸⁹]/g,function(c){return "^"+("²³⁴⁵⁶⁷⁸⁹".indexOf(c)+2)})
+           .replace(/\s+/g,"").replace(/[·×∙*]/g,"*").replace(/[−–—]/g,"-")
            .replace(/[\[\{]/g,"(").replace(/[\]\}]/g,")");
   if(!s)throw new Error("Ósvarað.");
   var i=0;
@@ -557,6 +574,9 @@ function s5(){var v,a,b,c;
 function s5p(){var a,b;
   do{a=2+rnd(6);b=1+rnd(9)}while(gcd(a,b)!==1||a*a>64||b*b>81);
   return mkS({c:1,v:{}},[lin("x",a,b,-1),lin("x",a,b,1)],false,[{c:a,v:kv("x",1)}],[{c:b,v:{}}])}
+function s5c(){var a,b,c;
+  do{a=2+rnd(4);b=1+rnd(7);c=pick([2,3,4,5])}while(gcd(a,b)!==1||c*a*a>150||c*b*b>150);
+  return mkS({c:c,v:{}},[lin("x",a,b,-1),lin("x",a,b,1)],false,[{c:a,v:kv("x",1)}],[{c:b,v:{}}])}
 function s6(){var v=pick(VARS),c=pick([1,1,1,2,3]),k=1+rnd(3);
   return mkS({c:c,v:{}},[lin(v,1,k,-1),lin(v,1,k,1),[{c:1,v:kv(v,2)},{c:k*k,v:{}}]],
              false,[{c:1,v:kv(v,2)}],[{c:k*k,v:{}}],true)}
@@ -594,7 +614,7 @@ var BLUEPRINT=[
   tag("agi",a2),                                             /* 6  báðar tölur neikvæðar */
   tag("agi",a3),                                             /* 7  ólík formerki */
   tag("agi",a3),                                             /* 8  ólík formerki */
-  tag("bland",function(){return pick([s2,s4])()}),           /* 9  sameiginlegt út + samoka */
+  tag("bland",function(){return pick([s2,s2,s5c])()}),       /* 9  tala út + samoka (aldrei veldi af x) */
   tag("bland",a5)                                            /* 10 sameiginlegt út + ágiskun */
 ];
 var KINDNM={ut:"Út fyrir sviga",sam:"Samokareglan",agi:"Ágiskun"};
@@ -762,12 +782,15 @@ function renderSheet(){
        '.</span><span class="qex">'+pHtml(exam[i].terms)+'</span></div>'+
        '<div class="qin"><span class="eq">=</span>'+
        '<input type="text" id="in'+i+'" autocomplete="off" autocapitalize="off" spellcheck="false" '+
-       'aria-label="Svar við dæmi '+(i+1)+'" placeholder="þáttað svar"></div></div>';
+       'aria-label="Svar við dæmi '+(i+1)+'" placeholder="þáttað svar"></div>'+
+       '<div class="preview" id="pre'+i+'" hidden><span class="plab">Svarið þitt:</span> <span class="pv" id="pv'+i+'"></span></div></div>';
   }
   $("qlist").innerHTML=h;
   for(i=0;i<exam.length;i++){
     var el=$("in"+i);
     el.addEventListener("input",updateProg);
+    el.addEventListener("input",function(){updatePreview(+this.id.slice(2))});
+    el.addEventListener("focus",function(){lastIn=this});
     el.addEventListener("keydown",function(e){
       if(e.key!=="Enter")return;
       e.preventDefault();
@@ -777,6 +800,41 @@ function renderSheet(){
   }
   updateProg();
 }
+
+/* Forskoðun: sýnir svarið með alvöru veldum, t.d. 3x^2 → 3x² */
+function previewHtml(v){
+  var h="",i,c,sup={"²":2,"³":3,"⁴":4,"⁵":5,"⁶":6,"⁷":7,"⁸":8,"⁹":9};
+  for(i=0;i<v.length;i++){
+    c=v[i];
+    if(c==="^"){var d="";while(/[0-9]/.test(v[i+1]||""))d+=v[++i];h+="<sup>"+(d||"?")+"</sup>"}
+    else if(sup[c])h+="<sup>"+sup[c]+"</sup>";
+    else if(/[a-zA-Z]/.test(c))h+="<var>"+c+"</var>";
+    else if(c==="-"||c==="−")h+="&minus;";
+    else if(c==="*")h+="·";
+    else if(c==="<")h+="&lt;";else if(c===">")h+="&gt;";else if(c==="&")h+="&amp;";
+    else h+=c;
+  }
+  return h;
+}
+function hasPow(v){return /\^|[²³⁴⁵⁶⁷⁸⁹]/.test(v)}
+var lastIn=null;
+function updatePreview(i){
+  var v=$("in"+i).value,box=$("pre"+i);
+  if(!hasPow(v)){box.hidden=true;return}
+  $("pv"+i).innerHTML=previewHtml(v);box.hidden=false;
+}
+Array.prototype.forEach.call(document.querySelectorAll("#keys button.k"),function(b){
+  b.addEventListener("mousedown",function(e){e.preventDefault()});   /* svarreitur heldur fókus */
+  b.onclick=function(){
+    var inp=lastIn||$("in0");
+    var a=(inp.selectionStart==null)?inp.value.length:inp.selectionStart;
+    var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
+    inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
+    inp.focus();
+    try{inp.selectionStart=inp.selectionEnd=a+b.dataset.ins.length}catch(e){}
+    updateProg();updatePreview(+inp.id.slice(2));
+  };
+});
 
 function handIn(){
   var n=updateProg();
@@ -860,6 +918,7 @@ function renderResult(res,right,by){
 
 function newExam(){
   exam=makeExam();
+  lastIn=null;
   renderSheet();
   $("warnbox").hidden=true;
   $("warnbox").removeAttribute("data-armed");

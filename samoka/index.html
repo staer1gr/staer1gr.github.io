@@ -102,6 +102,13 @@ input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; bord
 .keys button.k{font-family:var(--font-math); font-size:1rem; width:2.1rem; height:2.1rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer}
 .keys .hint{font-family:var(--font-body); font-size:.78rem; color:var(--muted)}
 .keys .mth{font-family:var(--font-math)}
+.keys button.pow{width:2.5rem; color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button sup{font-size:.65em; vertical-align:.55em; line-height:0}
+.preview{margin-top:8px; font-size:.82rem; color:var(--muted)}
+.preview .plab{text-transform:uppercase; letter-spacing:.08em; font-weight:600; font-size:.72rem}
+.preview .pv{font-family:var(--font-math); font-size:1.3rem; color:var(--ink)}
+.preview .pv sup{font-size:.62em; vertical-align:.55em; line-height:0}
+
 
 .fb{margin-top:14px; border-radius:8px; padding:12px 14px; font-size:.94rem; border:1px solid var(--line); background:var(--paper-2)}
 .fb.good{background:var(--good-soft); border-color:var(--good)}
@@ -181,9 +188,11 @@ input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; bord
     <div class="keys">
       <button type="button" class="k" data-ins="(" aria-label="Opna sviga">(</button>
       <button type="button" class="k" data-ins=")" aria-label="Loka sviga">)</button>
-      <button type="button" class="k" data-ins="^" aria-label="Veldi">^</button>
-      <span class="hint">Veldi með ^ — <span class="mth">x^2</span> þýðir <var>x</var><sup>2</sup></span>
+      <button type="button" class="k pow" data-ins="^2" aria-label="Í öðru veldi">&#9633;<sup>2</sup></button>
+      <button type="button" class="k" data-ins="^" aria-label="Annað veldi">^</button>
+      <span class="hint">Skrifaðu bókstafinn og ýttu svo á veldið</span>
     </div>
+    <div class="preview" id="preview" hidden><span class="plab">Svarið þitt:</span> <span class="pv" id="pv"></span></div>
 
     <div class="fb" id="fb" hidden></div>
     <div class="actions" id="actions"></div>
@@ -289,7 +298,8 @@ function sqHtml(P){
 
 /* ---------------- þáttari á innslegnu svari ---------------- */
 function parseFull(raw){
-  var s=raw.replace(/\s+/g,"").replace(/[·×∙*]/g,"*").replace(/[−–—]/g,"-")
+  var s=raw.replace(/[²³⁴⁵⁶⁷⁸⁹]/g,function(c){return "^"+("²³⁴⁵⁶⁷⁸⁹".indexOf(c)+2)})
+           .replace(/\s+/g,"").replace(/[·×∙*]/g,"*").replace(/[−–—]/g,"-")
            .replace(/[\[\{]/g,"(").replace(/[\]\}]/g,")");
   if(!s)throw new Error("Skrifaðu svar.");
   var i=0;
@@ -417,7 +427,8 @@ function g3(){
   do{v=pick(VARS);c=pick([2,3,4,5,6,7,9,25]);k=1+rnd(9)}while(c*k*k>200);
   return mk({c:c,v:{}},[linRev(v,k,-1),linRev(v,k,1)],true,[{c:k,v:{}}],[{c:1,v:kv(v,1)}]);
 }
-/* 4 · bókstafur út fyrir sviga: c·x^(m+2) − c·k²·x^m */
+/* 4 · bókstafur út fyrir sviga: c·x^(m+2) − c·k²·x^m
+   EKKI Í NOTKUN: í samoka er aðeins tala tekin út fyrir sviga, aldrei veldi af x. */
 function g4(){
   var v=pick(VARS),c=pick([1,1,1,2,3,5]),m=1+rnd(3),k=1+rnd(7);
   if(c*k*k>200)k=1+rnd(4);
@@ -440,7 +451,7 @@ function g6(){
 }
 /* 7 · óþáttanlegt: x² + k²
    EKKI Í NOTKUN. Allar stæður á vefnum eru þáttanlegar.
-   Til að taka þessa gerð í notkun: settu g7 inn í LEVELS[5] og DRILLMIX
+   Til að taka þessa gerð í notkun: settu g7 inn í LEVELS[4] og DRILLMIX
    hér fyrir neðan, og settu «Óþáttanlegt» hnappinn aftur inn í .keys. */
 function g7(){
   var v=pick(VARS),k=1+rnd(12);
@@ -453,12 +464,11 @@ var LEVELS=[
  {nm:"Hreint samoka",ex:"x² − 9",gen:g1},
  {nm:"Tölufastur þáttur fyrst",ex:"3x² − 27",gen:g2},
  {nm:"Umsnúið",ex:"20 − 5x²",gen:g3},
- {nm:"Bókstafur út fyrir sviga",ex:"x³ − 4x",gen:g4},
  {nm:"Ferningstala fyrir framan",ex:"16x² − 4",gen:g5},
- {nm:"Blandað",ex:"x⁴ − 1",gen:function(){return pick([g1,g2,g3,g4,g5,g5,g6,g6])()}}
+ {nm:"Blandað",ex:"x⁴ − 1",gen:function(){return pick([g1,g2,g3,g5,g5,g6,g6])()}}
 ];
 /* Fimihlutinn hefur eitt þyngdarstig: allar tegundir blandaðar, eins og á prófi. */
-var DRILLMIX=[g1,g1,g2,g2,g2,g3,g3,g4,g4,g4,g5,g5,g6,g6];
+var DRILLMIX=[g1,g1,g2,g2,g2,g3,g3,g5,g5,g5,g6,g6];
 function drillGen(){return pick(DRILLMIX)()}
 var GOAL=10;
 
@@ -539,7 +549,7 @@ function newProblem(){
     ? "Fullþáttaðu stæðuna."
     : "Þáttaðu stæðuna — taktu fyrst sameiginlega þáttinn út fyrir sviga ef hann er til.";
   $("problem").innerHTML=pHtml(prob.terms);
-  $("answer").value="";
+  $("answer").value="";$("preview").hidden=true;
   $("fb").hidden=true;$("fb").innerHTML="";
   drawMeter();renderActions();renderLevels();
   shownAt=Date.now();
@@ -709,6 +719,24 @@ function renderLevels(){
 /* ---------------- tengingar ---------------- */
 $("submit").onclick=submit;
 $("answer").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();submit()}});
+/* Forskoðun: sýnir svarið með alvöru veldum, t.d. 3x^2 → 3x² */
+function previewHtml(v){
+  var h="",i,c,sup={"²":2,"³":3,"⁴":4,"⁵":5,"⁶":6,"⁷":7,"⁸":8,"⁹":9};
+  for(i=0;i<v.length;i++){
+    c=v[i];
+    if(c==="^"){var d="";while(/[0-9]/.test(v[i+1]||""))d+=v[++i];h+="<sup>"+(d||"?")+"</sup>"}
+    else if(sup[c])h+="<sup>"+sup[c]+"</sup>";
+    else if(/[a-zA-Z]/.test(c))h+="<var>"+c+"</var>";
+    else if(c==="-"||c==="−")h+="&minus;";
+    else if(c==="*")h+="·";
+    else if(c==="<")h+="&lt;";else if(c===">")h+="&gt;";else if(c==="&")h+="&amp;";
+    else h+=c;
+  }
+  return h;
+}
+function hasPow(v){return /\^|[²³⁴⁵⁶⁷⁸⁹]/.test(v)}
+function updatePreview(){var v=$("answer").value;if(!hasPow(v)){$("preview").hidden=true;return}$("pv").innerHTML=previewHtml(v);$("preview").hidden=false}
+$("answer").addEventListener("input",updatePreview);
 $("mode-learn").onclick=function(){setMode("learn")};
 $("mode-drill").onclick=function(){setMode("drill")};
 sel.onchange=function(){setLevel(+sel.value)};
@@ -719,7 +747,8 @@ Array.prototype.forEach.call(document.querySelectorAll(".keys button.k"),functio
     var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
     inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
     inp.focus();
-    try{inp.selectionStart=inp.selectionEnd=a+1}catch(e){}
+    try{inp.selectionStart=inp.selectionEnd=a+b.dataset.ins.length}catch(e){}
+    updatePreview();
   };
 });
 $("reset").onclick=function(){store.stats={};saveStore();streak=0;times=[];drawMeter();renderLevels()};
