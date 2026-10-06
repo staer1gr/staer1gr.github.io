@@ -410,7 +410,7 @@ function check(raw,p){
 }
 
 /* ---------------- dæmasmiður ---------------- */
-var VARS=["x","y","a","b","k","t","p","m","n","r","s","z","h","c"];
+var VARS=["x"];   /* eingöngu x */
 function rnd(n){return Math.floor(Math.random()*n)}
 function pick(a){return a[rnd(a.length)]}
 
@@ -465,7 +465,7 @@ var LEVELS=[
  {nm:"Bæði negatíf",ex:"x² − 6x + 8",gen:gNeg},
  {nm:"Sitt á hvað",ex:"x² + 5x − 14",gen:gMix},
  {nm:"Ferningsliður",ex:"x² − 6x + 9",gen:gSq},
- {nm:"Tölufastur þáttur fyrst",ex:"2a² + 16a + 14",gen:gCf},
+ {nm:"Tölufastur þáttur fyrst",ex:"2x² + 16x + 14",gen:gCf},
  {nm:"Blandað",ex:"allar tegundir",gen:function(){return pick([gPos,gNeg,gMix,gMix,gSq,gCf,gCf])()}}
 ];
 /* Fimihlutinn hefur eitt þyngdarstig: allar tegundir blandaðar, eins og á prófi. */

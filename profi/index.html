@@ -464,8 +464,7 @@ function reducible(P){
     var A=co[2],B=co[1],C=co[0],d=B*B-4*A*C;
     if(d<0)return false;
     var rt=Math.round(Math.sqrt(d));
-    if(rt*rt!==d)return false;
-    return ((-B+rt)%(2*A)===0)&&((-B-rt)%(2*A)===0);
+    return rt*rt===d;   /* fullkominn ferningur ⇒ þáttanlegt yfir heiltölum */
   }
   return false;
 }

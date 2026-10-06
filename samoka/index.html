@@ -384,7 +384,7 @@ function check(raw,p){
 }
 
 /* ---------------- dæmasmiður ---------------- */
-var VARS=["x","y","a","b","h","k","t","z","m","n","p","r","s","c"];
+var VARS=["x"];   /* eingöngu x */
 function rnd(n){return Math.floor(Math.random()*n)}
 function pick(a){return a[rnd(a.length)]}
 /* (v - k) og (v + k) */
@@ -451,9 +451,9 @@ function g7(){
 
 var LEVELS=[
  {nm:"Hreint samoka",ex:"x² − 9",gen:g1},
- {nm:"Tölufastur þáttur fyrst",ex:"3z² − 27",gen:g2},
- {nm:"Umsnúið",ex:"20 − 5k²",gen:g3},
- {nm:"Bókstafur út fyrir sviga",ex:"a³ − 4a",gen:g4},
+ {nm:"Tölufastur þáttur fyrst",ex:"3x² − 27",gen:g2},
+ {nm:"Umsnúið",ex:"20 − 5x²",gen:g3},
+ {nm:"Bókstafur út fyrir sviga",ex:"x³ − 4x",gen:g4},
  {nm:"Ferningstala fyrir framan",ex:"16x² − 4",gen:g5},
  {nm:"Blandað",ex:"x⁴ − 1",gen:function(){return pick([g1,g2,g3,g4,g5,g5,g6,g6])()}}
 ];
