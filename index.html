@@ -85,7 +85,8 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
 .tile-top{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap}
 .tile-nm{font-family:var(--font-display); font-size:1.12rem; font-weight:500}
 .tile-go{font-size:.78rem; color:var(--accent); font-weight:600; white-space:nowrap}
-.tile-ex{display:block; font-family:var(--font-math); font-size:1.08rem; color:var(--muted); margin-top:.1rem}
+.tile-ex{display:flex; flex-wrap:wrap; gap:6px; font-family:var(--font-math); font-size:1.08rem; color:var(--muted); margin-top:.35rem}
+.tile-ex .ex{background:var(--paper-2); border:1px solid var(--line); border-radius:6px; padding:.05rem .5rem; white-space:nowrap}
 .tile-de{display:block; font-size:.85rem; color:var(--muted); margin-top:.4rem}
 .tile.exam{border-left-color:var(--streak); background:var(--paper)}
 .tile.exam .tile-go{color:var(--streak)}
@@ -129,7 +130,7 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
           <span class="tile-nm">Þátta út fyrir sviga</span>
           <span class="tile-go">Opna &rarr;</span>
         </span>
-        <span class="tile-ex">3x &minus; 9 &nbsp;·&nbsp; 14xy + 7y &nbsp;·&nbsp; 4x&sup2;yz&sup3; + 12xy&sup2;z&sup2; &minus; 20xyz&sup2;</span>
+        <span class="tile-ex"><span class="ex">3x &minus; 9</span><span class="ex">14xy + 7y</span><span class="ex">4x&sup2;yz&sup3; + 12xy&sup2;z&sup2; &minus; 20xyz&sup2;</span></span>
         <span class="tile-de">Sex þyngdarstig, frá einni tölu út fyrir sviga upp í margar breytur með veldum.</span>
       </a>
 
@@ -138,7 +139,7 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
           <span class="tile-nm">Þátta með samokareglunni</span>
           <span class="tile-go">Opna &rarr;</span>
         </span>
-        <span class="tile-ex">x&sup2; &minus; 9 &nbsp;·&nbsp; 20 &minus; 5k&sup2; &nbsp;·&nbsp; 16x&sup2; &minus; 4 &nbsp;·&nbsp; x&#8308; &minus; 1</span>
+        <span class="tile-ex"><span class="ex">x&sup2; &minus; 9</span><span class="ex">20 &minus; 5x&sup2;</span><span class="ex">16x&sup2; &minus; 4</span><span class="ex">x&#8308; &minus; 1</span></span>
         <span class="tile-de">Mismunur tveggja ferninga. Í erfiðustu dæmunum þarf fyrst að taka út fyrir sviga.</span>
       </a>
 
@@ -147,7 +148,7 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
           <span class="tile-nm">Þátta með ágiskun</span>
           <span class="tile-go">Opna &rarr;</span>
         </span>
-        <span class="tile-ex">x&sup2; + 5x + 6 &nbsp;·&nbsp; x&sup2; + 5x &minus; 14 &nbsp;·&nbsp; 2a&sup2; + 16a + 14</span>
+        <span class="tile-ex"><span class="ex">x&sup2; + 5x + 6</span><span class="ex">x&sup2; + 5x &minus; 14</span><span class="ex">2x&sup2; + 16x + 14</span></span>
         <span class="tile-de">Tvær tölur sem margfaldast í fastaliðinn og leggjast saman í miðjuliðinn.</span>
       </a>
 
@@ -156,7 +157,7 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
           <span class="tile-nm">Æfingapróf í þáttun</span>
           <span class="tile-go">Opna &rarr;</span>
         </span>
-        <span class="tile-ex">10 dæmi &nbsp;·&nbsp; allar þrjár aðferðir &nbsp;·&nbsp; klukka</span>
+        <span class="tile-ex" style="font-family:var(--font-body);font-size:.9rem"><span class="ex">10 dæmi</span><span class="ex">í erfiðleikaröð</span><span class="ex">klukka</span></span>
         <span class="tile-de">Taktu þetta þegar þú hefur náð tíu í röð í öllum þrem. Engin svör fyrr en þú skilar — þá kemur einkunn og útreikningar við þau dæmi sem voru röng.</span>
       </a>
 
