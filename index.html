@@ -86,6 +86,10 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
 .tile-nm{font-family:var(--font-display); font-size:1.12rem; font-weight:500}
 .tile-go{font-size:.78rem; color:var(--accent); font-weight:600; white-space:nowrap}
 .tile-ex{display:flex; flex-wrap:wrap; gap:6px; font-family:var(--font-math); font-size:1.08rem; color:var(--muted); margin-top:.35rem}
+.tile-ex{align-items:center}
+.frac{display:inline-flex; flex-direction:column; align-items:stretch; vertical-align:middle; line-height:1.15; text-align:center; font-size:.92em}
+.frac>.nu{padding:0 .25em .05em; border-bottom:1.5px solid currentColor}
+.frac>.de{padding:.05em .25em 0}
 .tile-ex .ex{background:var(--paper-2); border:1px solid var(--line); border-radius:6px; padding:.05rem .5rem; white-space:nowrap}
 .tile-de{display:block; font-size:.85rem; color:var(--muted); margin-top:.4rem}
 .tile.exam{border-left-color:var(--streak); background:var(--paper)}
@@ -165,19 +169,40 @@ h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.6rem,5.5v
   </section>
 
   <!-- ══════════ LOTA 5 ══════════ -->
-  <section class="lota soon">
+  <section class="lota">
     <div class="lota-head">
       <span class="lota-no">Lota 5</span>
       <span class="lota-nm">Algebrubrot</span>
     </div>
     <div class="lota-tiles">
-      <span class="tile soon">
+
+      <a class="tile" href="stytta/">
         <span class="tile-top">
-          <span class="tile-nm">Algebrubrot</span>
-          <span class="tile-go">Í vinnslu</span>
+          <span class="tile-nm">Stytta algebrubrot</span>
+          <span class="tile-go">Opna &rarr;</span>
         </span>
-        <span class="tile-de">Stytta, leggja saman og margfalda brot með stæðum.</span>
-      </span>
+        <span class="tile-ex"><span class="ex"><span class="frac"><span class="nu">6x</span><span class="de">9</span></span></span><span class="ex"><span class="frac"><span class="nu">12x&sup2;y</span><span class="de">8xy&sup3;</span></span></span><span class="ex"><span class="frac"><span class="nu">(x + 2)(x &minus; 3)</span><span class="de">(x &minus; 3)(x + 5)</span></span></span></span>
+        <span class="tile-de">Brotin eru þegar þáttuð. Aðeins þættir styttast — ekki liðir.</span>
+      </a>
+
+      <a class="tile" href="thatta-stytta/">
+        <span class="tile-top">
+          <span class="tile-nm">Þátta og stytta</span>
+          <span class="tile-go">Opna &rarr;</span>
+        </span>
+        <span class="tile-ex"><span class="ex"><span class="frac"><span class="nu">5x + 10</span><span class="de">5</span></span></span><span class="ex"><span class="frac"><span class="nu">x + 2</span><span class="de">x&sup2; + 5x + 6</span></span></span><span class="ex"><span class="frac"><span class="nu">x&sup2; &minus; 4</span><span class="de">x&sup2; + 4x + 4</span></span></span></span>
+        <span class="tile-de">Fyrst þarf að þátta teljara og nefnara: út fyrir sviga, samoka eða ágiskun. Svo má stytta.</span>
+      </a>
+
+      <a class="tile exam" href="profi-brot/">
+        <span class="tile-top">
+          <span class="tile-nm">Æfingapróf í algebrubrotum</span>
+          <span class="tile-go">Opna &rarr;</span>
+        </span>
+        <span class="tile-ex" style="font-family:var(--font-body);font-size:.9rem"><span class="ex">10 dæmi</span><span class="ex">í erfiðleikaröð</span><span class="ex">klukka</span></span>
+        <span class="tile-de">Taktu þetta æfingapróf þegar þú hefur náð tíu dæmum í röð rétt í báðum fimihlutunum. Þú færð ekki að sjá hvað þú gerðir rétt fyrr en þú skilar prófinu. Þá færðu einkunn og útreikninga við þau dæmi sem voru röng.</span>
+      </a>
+
     </div>
   </section>
 
