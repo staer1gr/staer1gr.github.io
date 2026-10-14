@@ -102,6 +102,11 @@ input[type=text]{
   background:var(--paper-2); color:var(--ink);
 }
 input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+.answerrow{align-items:center}
+.fracin{display:inline-flex; flex-direction:column; align-items:stretch; gap:6px; flex:0 1 17rem; min-width:0}
+.fracin input[type=text]{flex:none; width:100%; text-align:center}
+.fracin .bar{height:2px; background:var(--ink); border-radius:2px; margin:0 2px}
+.fracin + .btn{align-self:center}
 .btn{font:inherit; font-weight:600; font-size:.95rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:var(--paper); cursor:pointer}
 .btn:hover{filter:brightness(1.08)}
 .btn.ghost{background:transparent; color:var(--accent)}
@@ -192,15 +197,18 @@ input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; bord
     </div>
 
     <div class="answerrow">
-      <input type="text" id="answer" placeholder="t.d. (5x−24)/6" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Svar">
+      <div class="fracin">
+        <input type="text" id="ansN" placeholder="teljari, t.d. 5x−24" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Teljari">
+        <span class="bar" aria-hidden="true"></span>
+        <input type="text" id="ansD" placeholder="nefnari, t.d. 6" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Nefnari">
+      </div>
       <button class="btn" id="submit" type="button">Athuga</button>
     </div>
     <div class="keys">
       <button type="button" class="k" data-ins="(" aria-label="Opna sviga">(</button>
       <button type="button" class="k" data-ins=")" aria-label="Loka sviga">)</button>
-      <button type="button" class="k" data-ins="/" aria-label="Brotastrik">/</button>
       <button type="button" class="k pow" data-ins="^2" aria-label="Í öðru veldi">&#9633;<sup>2</sup></button>
-      <span class="hint">Eitt brot, svigar utan um teljara og nefnara: <span class="mth">(x+22)/(4x)</span></span>
+      <span class="hint">Teljarinn í efri reitinn, nefnarinn í þann neðri — engir svigar utan um.</span>
     </div>
     <div class="preview" id="preview" hidden><span class="plab">Svarið þitt:</span> <span class="pv" id="pv"></span></div>
 
@@ -488,7 +496,7 @@ function parseFull(raw){
     if(ch==="("){i++;var e=expr();if(s[i]!==")")throw new Error("Það vantar loka-sviga «)».");i++;base=e.poly}
     else if(/[0-9]/.test(ch)){var n="";while(i<s.length&&/[0-9]/.test(s[i]))n+=s[i++];base=[{c:parseInt(n,10),v:{}}]}
     else if(/[a-zA-Z]/.test(ch)){base=[{c:1,v:kv(s[i++],1)}]}
-    else if(ch==="/")throw new Error("Notaðu bara eitt brotastrik og skrifaðu svarið sem eitt brot, t.d. (5x−24)/6.");
+    else if(ch==="/")throw new Error("Brotastrikið er þegar komið — skrifaðu teljarann í efri reitinn og nefnarann í þann neðri.");
     else throw new Error("Ég skil ekki táknið «"+ch+"».");
     var rep=1;
     if(s[i]==="^"){
@@ -555,6 +563,17 @@ function parseFrac(raw){
   if(!b.poly.length)throw new Error("Nefnarinn má ekki vera núll.");
   return{N:a.poly,D:b.poly};
 }
+function parseTwo(rawN,rawD){
+  var n=rawN.replace(/÷/g,"/"),d=rawD.replace(/÷/g,"/");
+  if(!n.trim()&&!d.trim())throw new Error("Skrifaðu svar.");
+  if(!n.trim())throw new Error("Það vantar teljarann (efri reitinn).");
+  if(/\//.test(n+d))throw new Error("Brotastrikið er þegar komið — skrifaðu teljarann í efri reitinn og nefnarann í þann neðri.");
+  var N;try{N=parseFull(n).poly}catch(e){throw new Error("Teljari: "+e.message)}
+  if(!d.trim())return{N:N,D:[{c:1,v:{}}],noD:true};
+  var D;try{D=parseFull(d).poly}catch(e){throw new Error("Nefnari: "+e.message)}
+  if(!D.length)throw new Error("Nefnarinn má ekki vera núll.");
+  return{N:N,D:D};
+}
 function whyNotReduced(fN,fD,p){
   var bits=[],c=gcd(content(fN),content(fD));
   if(c>1)bits.push('<span class="mth">'+c+"</span>");
@@ -565,14 +584,15 @@ function whyNotReduced(fN,fD,p){
   });
   return bits;
 }
-function check(raw,p){
+function check(rawN,rawD,p){
   var f;
-  try{f=parseFrac(raw)}catch(e){return{status:"error",msg:e.message}}
+  try{f=parseTwo(rawN,rawD)}catch(e){return{status:"error",msg:e.message}}
   function eq(N,D){return pEq(pMul(f.N,D),pMul(f.D,N))}
   if(eq(p.N0,p.D0x)){
     if(isPM(f.N,p.N0))return{status:"correct"};
     return{status:"notreduced",bits:whyNotReduced(f.N,f.D,p)};
   }
+  if(f.noD)return{status:"error",msg:"Það vantar nefnarann (neðri reitinn)."};
   if(p.MN&&eq(p.MN,p.Lx))return{status:"minus"};
   if(p.WN&&eq(p.WN,p.WD))return{status:"addden"};
   return{status:"value"};
@@ -607,6 +627,7 @@ function previewHtml(v){
   if(pos.length!==1)return previewLine(v);
   return frac(previewLine(stripWrap(v.slice(0,pos[0]))),previewLine(stripWrap(v.slice(pos[0]+1)))||"?");
 }
+function previewTwo(n,d){return d.trim()?frac(previewLine(n)||"?",previewLine(d)):previewLine(n)}
 function wantsPreview(v){return /[\/÷^²³⁴⁵⁶⁷⁸⁹]/.test(v)}
 
 /* ════════ dæmasmiðir ════════ */
@@ -889,11 +910,11 @@ function newProblem(){
     : "Stig "+(lvl+1)+" · "+LEVELS[lvl].nm;
   $("prompt").textContent=mode==="drill"?PROMPT_DRILL:PROMPT_LEARN;
   $("problem").innerHTML=problemHtml(prob);
-  $("answer").value="";$("preview").hidden=true;
+  $("ansN").value="";$("ansD").value="";$("preview").hidden=true;
   $("fb").hidden=true;$("fb").innerHTML="";
   drawMeter();renderActions();renderLevels();
   shownAt=Date.now();
-  $("answer").focus();
+  $("ansN").focus();
 }
 
 function renderActions(){
@@ -944,10 +965,10 @@ function hint(){
       : "<p>Ekkert styttist — þetta er svarið.</p>";
   }
   fbox("neutral",h);
-  $("answer").focus();
+  focusAns();
 }
 
-function succeed(){
+function succeed(note){
   var st=curStat();
   st.tries++;st.right++;streak++;
   times.push(Date.now()-shownAt);
@@ -963,7 +984,7 @@ function succeed(){
   }
   saveStore();
   answered=true;
-  fbox("good",'<p><strong>Rétt.</strong></p><p class="big">'+problemHtml(prob)+" = "+ansHtml(prob)+"</p>"+extra);
+  fbox("good",(note||'<p><strong>Rétt.</strong></p>')+'<p class="big">'+problemHtml(prob)+" = "+ansHtml(prob)+"</p>"+extra);
   drawMeter();renderActions();renderLevels();
 }
 
@@ -987,25 +1008,28 @@ function fail(msgHtml){
 
 function submit(){
   if(answered){newProblem();return}
-  var r=check($("answer").value,prob);
+  var r=check($("ansN").value,$("ansD").value,prob);
   if(r.status==="correct"){succeed();return}
+  if(r.status==="notreduced"){
+    succeed("<p><strong>Rétt, en hægt að stytta.</strong> "+
+      (r.bits.length?"Teljari og nefnari eiga enn sameiginlegt: "+r.bits.join(" og ")+".":"Teljari og nefnari eiga enn sameiginlegan þátt.")+
+      " Fullstytt er svarið:</p>");
+    return;
+  }
   if(r.status==="error"){
     fbox("bad","<p><strong>"+esc(r.msg)+"</strong></p>");
-    $("answer").focus();return;
+    focusAns();return;
   }
   if(r.status==="minus"){
     fail("<p><strong>Ekki rétt — gættu að mínusnum.</strong> Mínus fyrir framan brot á við <em>allan</em> teljarann, ekki bara fyrsta liðinn. Settu sviga utan um teljarann og breyttu formerki á öllum liðunum í honum.</p>");
   }else if(r.status==="addden"){
     fail("<p><strong>Ekki rétt — nefnararnir eru ekki lagðir saman.</strong> Fyrst þarf samnefnara. Svo eru aðeins teljararnir lagðir saman, nefnarinn helst.</p>"+
       '<p class="why">Til dæmis er <span class="mth">'+frac("1","2")+" + "+frac("1","2")+" = "+frac("2","2")+" = 1</span>, ekki <span class=\"mth\">"+frac("2","4")+"</span>.</p>");
-  }else if(r.status==="notreduced"){
-    fail("<p><strong>Rétt reiknað, en ekki fullstytt.</strong> "+
-      (r.bits.length?"Enn er sameiginlegt með teljara og nefnara: "+r.bits.join(" og ")+".":"Teljari og nefnari eiga enn sameiginlegan þátt.")+"</p>");
   }else{
     fail("<p><strong>Ekki rétt.</strong> Svarið þitt er ekki jafnt summunni.</p>"+
       '<p class="why">Athugaðu samnefnarann, hvort öll brotin voru lengd rétt, og formerkin þegar dregið er frá.</p>');
   }
-  if(mode==="learn")$("answer").focus();
+  if(mode==="learn")focusAns();
 }
 
 function renderLevels(){
@@ -1028,16 +1052,30 @@ function renderLevels(){
 
 /* ════════ tengingar ════════ */
 $("submit").onclick=submit;
-$("answer").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();submit()}});
-function updatePreview(){var v=$("answer").value;if(!wantsPreview(v)){$("preview").hidden=true;return}$("pv").innerHTML=previewHtml(v);$("preview").hidden=false}
-$("answer").addEventListener("input",updatePreview);
+var lastInp=null;
+function focusAns(){var n=$("ansN");(lastInp&&n.value.trim()?lastInp:n).focus()}
+$("ansN").addEventListener("keydown",function(e){
+  if(e.key==="Enter"||e.key==="/"||e.key==="÷"){
+    e.preventDefault();
+    if(e.key==="Enter"&&answered){submit();return}
+    $("ansD").focus();
+  }
+});
+$("ansD").addEventListener("keydown",function(e){
+  if(e.key==="Enter"){e.preventDefault();submit()}
+  else if(e.key==="Backspace"&&!$("ansD").value){e.preventDefault();$("ansN").focus()}
+});
+["ansN","ansD"].forEach(function(id){$(id).addEventListener("focus",function(){lastInp=$(id)})});
+function updatePreview(){var n=$("ansN").value,d=$("ansD").value;if(!wantsPreview(n+d)){$("preview").hidden=true;return}$("pv").innerHTML=previewTwo(n,d);$("preview").hidden=false}
+$("ansN").addEventListener("input",updatePreview);
+$("ansD").addEventListener("input",updatePreview);
 $("mode-learn").onclick=function(){setMode("learn")};
 $("mode-drill").onclick=function(){setMode("drill")};
 sel.onchange=function(){setLevel(+sel.value)};
 Array.prototype.forEach.call(document.querySelectorAll(".keys button.k"),function(b){
   b.addEventListener("mousedown",function(e){e.preventDefault()});
   b.onclick=function(){
-    var inp=$("answer");
+    var inp=lastInp||$("ansN");
     var a=(inp.selectionStart==null)?inp.value.length:inp.selectionStart;
     var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
     inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
