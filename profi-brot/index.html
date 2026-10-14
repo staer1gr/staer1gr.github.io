@@ -120,6 +120,9 @@ input[type=text]{
 }
 input[type=text]:focus{border-color:var(--accent)}
 .qin .eq{font-family:var(--font-math); font-size:1.18rem; color:var(--muted); flex:none}
+.fracin{display:inline-flex; flex-direction:column; align-items:stretch; gap:5px; flex:0 1 15rem; min-width:0}
+.fracin input[type=text]{flex:none; width:100%; text-align:center}
+.fracin .fbar{height:2px; background:var(--ink); border-radius:2px; margin:0 2px}
 .submitrow{margin-top:18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
 .warn{background:var(--bad-soft); border:1px solid var(--bad); border-radius:8px; padding:11px 13px; margin-top:14px; font-size:.92rem}
 .warn p{margin:.2rem 0}
@@ -212,7 +215,8 @@ input[type=text]:focus{border-color:var(--accent)}
         <li>Dæmin eru í erfiðleikaröð, en þú mátt svara í hvaða röð sem er og getur breytt svörum þangað til þú skilar.</li>
         <li><strong>Engin svör birtast meðan á prófinu stendur.</strong> Þú sérð hvað var rétt og rangt fyrst þegar þú skilar — eins og á prófi.</li>
         <li>Klukkan í horninu byrjar þegar þú ýtir á hnappinn. Hún stoppar þig ekki; hún er til þess að þú sjáir hvað þú ert lengi.</li>
-        <li>Svarið á að vera <strong>eitt fullstytt brot</strong>. Brot sem enn má stytta telst ekki rétt.</li>
+        <li>Teljarinn fer í efri reitinn og nefnarinn í þann neðri — engir svigar utan um.</li>
+        <li>Í dæmum 1–3 (þátta og stytta) á svarið að vera <strong>fullstytt</strong>. Í samlagningardæmunum telst óstytt svar rétt, en þú færð að vita ef hægt var að stytta meira.</li>
         <li>Skrifaðu brot með svigum utan um teljara og nefnara, t.d. <span class="mth">(x+2)/(x&minus;3)</span>.</li>
       </ol>
 
@@ -237,7 +241,6 @@ input[type=text]:focus{border-color:var(--accent)}
         <button type="button" class="k pow" data-ins="^3" aria-label="Í þriðja veldi">&#9633;<sup>3</sup></button>
                 <button type="button" class="k" data-ins="(" aria-label="Opna sviga">(</button>
         <button type="button" class="k" data-ins=")" aria-label="Loka sviga">)</button>
-        <button type="button" class="k" data-ins="/" aria-label="Brotastrik">/</button>
       </span>
       <button class="btn" id="handin" type="button">Skila prófi</button>
     </div>
@@ -1385,6 +1388,22 @@ function makeExam(){
 function qProblem(p){return p.kind==="sl"?SL.problemHtml(p):problemHtml(p)}
 function qAns(p){return p.kind==="sl"?SL.ansHtml(p):ansHtml(p)}
 function qCheck(raw,p){return p.kind==="sl"?SL.check(raw,p):check(raw,p)}
+/* teljari og nefnari úr tveimur reitum, settir saman í eitt brot fyrir yfirferðina */
+function rawOf(i){
+  var n=$("inN"+i).value.trim(),d=$("inD"+i).value.trim();
+  if(!n&&!d)return "";
+  return d?"("+n+")/("+d+")":n;
+}
+function qCheck2(i,p){
+  var n=$("inN"+i).value.trim(),d=$("inD"+i).value.trim();
+  if(!n)return{status:"error",msg:"Það vantar teljarann (efri reitinn)."};
+  if(/[\/÷]/.test(n+d))return{status:"error",msg:"Brotastrikið er þegar komið — teljarinn fer í efri reitinn og nefnarinn í þann neðri."};
+  var r=qCheck(rawOf(i),p);
+  if(!d&&r.status!=="correct"&&r.status!=="notreduced"&&r.status!=="same")return{status:"error",msg:"Það vantar nefnarann (neðri reitinn)."};
+  return r;
+}
+/* í samlagningu telst óstytt svar rétt */
+function isOk(p,r){return r.status==="correct"||(p.kind==="sl"&&r.status==="notreduced")}
 
 function solutionHtml(p){
   return '<div class="sol"><span class="lbl">Rétt leið</span><ol>'+(p.kind==="sl"?SL.solutionList(p):solutionList(p))+"</ol></div>";
@@ -1450,8 +1469,8 @@ function bestLine(){
 function updateProg(){
   var n=0;
   for(var i=0;i<10;i++){
-    var el=$("in"+i);
-    var has=el.value.trim().length>0;
+    var el=$("inN"+i);
+    var has=(el.value+$("inD"+i).value).trim().length>0;
     if(has)n++;
     el.closest(".q").className="q"+(has?" filled":"");
   }
@@ -1468,20 +1487,33 @@ function renderSheet(){
     h+='<div class="q"><div class="qhead"><span class="qno">'+(i+1)+
        '.</span><span class="qex">'+qProblem(exam[i])+'</span></div>'+
        '<div class="qin"><span class="eq">=</span>'+
-       '<input type="text" id="in'+i+'" autocomplete="off" autocapitalize="off" spellcheck="false" '+
-       'aria-label="Svar við dæmi '+(i+1)+'" placeholder="eitt fullstytt brot"></div>'+
+       '<span class="fracin">'+
+       '<input type="text" id="inN'+i+'" autocomplete="off" autocapitalize="off" spellcheck="false" '+
+       'aria-label="Teljari í dæmi '+(i+1)+'" placeholder="teljari">'+
+       '<span class="fbar" aria-hidden="true"></span>'+
+       '<input type="text" id="inD'+i+'" autocomplete="off" autocapitalize="off" spellcheck="false" '+
+       'aria-label="Nefnari í dæmi '+(i+1)+'" placeholder="nefnari"></span></div>'+
        '<div class="preview" id="pre'+i+'" hidden><span class="plab">Svarið þitt:</span> <span class="pv" id="pv'+i+'"></span></div></div>';
   }
   $("qlist").innerHTML=h;
   for(i=0;i<exam.length;i++){
-    var el=$("in"+i);
-    el.addEventListener("input",updateProg);
-    el.addEventListener("input",function(){updatePreview(+this.id.slice(2))});
-    el.addEventListener("focus",function(){lastIn=this});
-    el.addEventListener("keydown",function(e){
+    ["inN","inD"].forEach(function(pre){
+      var el=$(pre+i);
+      el.addEventListener("input",updateProg);
+      el.addEventListener("input",function(){updatePreview(+this.id.slice(3))});
+      el.addEventListener("focus",function(){lastIn=this});
+    });
+    $("inN"+i).addEventListener("keydown",function(e){
+      if(e.key!=="Enter"&&e.key!=="/"&&e.key!=="÷")return;
+      e.preventDefault();
+      $("inD"+this.id.slice(3)).focus();
+    });
+    $("inD"+i).addEventListener("keydown",function(e){
+      var id=+this.id.slice(3);
+      if(e.key==="Backspace"&&!this.value){e.preventDefault();$("inN"+id).focus();return}
       if(e.key!=="Enter")return;
       e.preventDefault();
-      var id=+this.id.slice(2),nx=$("in"+(id+1));
+      var nx=$("inN"+(id+1));
       if(nx)nx.focus(); else this.blur();
     });
   }
@@ -1490,20 +1522,20 @@ function renderSheet(){
 
 var lastIn=null;
 function updatePreview(i){
-  var v=$("in"+i).value,box=$("pre"+i);
-  if(!wantsPreview(v)){box.hidden=true;return}
-  $("pv"+i).innerHTML=previewHtml(v);box.hidden=false;
+  var n=$("inN"+i).value,d=$("inD"+i).value,box=$("pre"+i);
+  if(!wantsPreview(n+d)){box.hidden=true;return}
+  $("pv"+i).innerHTML=d.trim()?frac(previewLine(n)||"?",previewLine(d)):previewLine(n);box.hidden=false;
 }
 Array.prototype.forEach.call(document.querySelectorAll("#keys button.k"),function(b){
   b.addEventListener("mousedown",function(e){e.preventDefault()});   /* svarreitur heldur fókus */
   b.onclick=function(){
-    var inp=lastIn||$("in0");
+    var inp=lastIn||$("inN0");
     var a=(inp.selectionStart==null)?inp.value.length:inp.selectionStart;
     var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
     inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
     inp.focus();
     try{inp.selectionStart=inp.selectionEnd=a+b.dataset.ins.length}catch(e){}
-    updateProg();updatePreview(+inp.id.slice(2));
+    updateProg();updatePreview(+inp.id.slice(3));
   };
 });
 
@@ -1522,9 +1554,9 @@ function handIn(){
   var res=[],right=0,by={},i;
   CATS.forEach(function(k){by[k]=[0,0]});
   for(i=0;i<exam.length;i++){
-    var raw=$("in"+i).value.trim();
-    var r=raw?qCheck(raw,exam[i]):{status:"empty"};
-    var ok=(r.status==="correct");
+    var raw=rawOf(i);
+    var r=raw?qCheck2(i,exam[i]):{status:"empty"};
+    var ok=isOk(exam[i],r);
     if(ok)right++;
     by[exam[i].cat][1]++;
     if(ok)by[exam[i].cat][0]++;
@@ -1580,6 +1612,9 @@ function renderResult(res,right,by){
     r+='<div class="rbody">';
     if(it.ok){
       r+='<p class="yours"><i>= '+qAns(p)+"</i></p>";
+      if(it.r.status==="notreduced")
+        r+='<p class="why">Rétt, en hægt að stytta: þitt svar var <i>'+yoursHtml(it.raw)+"</i>"+
+           (it.r.bits.length?" — teljari og nefnari eiga enn sameiginlegt "+it.r.bits.join(" og "):"")+".</p>";
     }else{
       r+='<p class="yours">Þitt svar: '+(it.raw?"<i>"+yoursHtml(it.raw)+"</i>":"<i>ósvarað</i>")+"</p>";
       if(it.raw)r+=reasonHtml(p,it.r);
@@ -1601,7 +1636,7 @@ function newExam(){
   $("screen-sheet").hidden=false;
   startClock();
   window.scrollTo(0,0);
-  $("in0").focus();
+  $("inN0").focus();
 }
 
 $("startbtn").onclick=newExam;
