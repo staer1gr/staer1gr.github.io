@@ -635,7 +635,7 @@ function rnd(n){return Math.floor(Math.random()*n)}
 function pick(a){return a[rnd(a.length)]}
 function nz(n){var k;do{k=rnd(2*n+1)-n}while(k===0);return k}
 function shuffled(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=rnd(i+1),t=b[i];b[i]=b[j];b[j]=t}return b}
-var VARS=["x","x","x","a","a","y","t","k"];
+var VARS=["x","x","x","a","a","y","t","k","p"];
 function V(v,c){return{c:c==null?1:c,v:kv(v,1)}}
 function K(c){return{c:c,v:{}}}
 function Dn(c,v){return{mono:M(c,v?kv(v,1):{}),facs:[]}}
@@ -721,19 +721,19 @@ function g2(){
   return build([T(1,[K(4),V("y",-1)],y),T(-1,[K(1),V("y",-2)],y)]);
 }
 /* 3 · ólíkir tölunefnarar */
-function g3(){
+function g3(mode){   /* mode "bin": tveir tvíliðir, mínus fyrir framan seinni */
   for(var att=0;att<4000;att++){
-    var v=pick(VARS),n=Math.random()<.7?2:3,dens=[],i;
+    var v=pick(VARS),n=(mode==="bin"||Math.random()<.7)?2:3,dens=[],i;
     for(i=0;i<n;i++)dens.push(pick([2,3,4,5,6,8,10,12]));
     var l=dens.reduce(lcm,1),uniq={};dens.forEach(function(x){uniq[x]=1});
     if(Object.keys(uniq).length<2||l>(n===2?24:12))continue;
     var ts=[],allcv=(n===3&&Math.random()<.6),hv=false;
     for(i=0;i<n;i++){
-      var kind=allcv?"cv":pick(["cv","cv","k","v+k","cv+k","k-cv"]);
+      var kind=mode==="bin"?pick(["v+k","cv+k","k-cv"]):allcv?"cv":pick(["cv","cv","k","v+k","cv+k","k-cv"]);
       if(i===n-1&&!hv)kind="cv";
       var nd=numer(v,kind);if(hasVar(nd))hv=true;
       if(allcv)nd=[V(v,1+rnd(11))];
-      ts.push(T(i?sgn(.55):1,nd,Dn(dens[i])));
+      ts.push(T(i?sgn(mode==="bin"?.2:.55):1,nd,Dn(dens[i])));
     }
     var p=build(ts);
     if(okP(p)&&hasVar(p.N))return p;
@@ -779,14 +779,44 @@ function g5(){
   return build([T(1,[K(1)],Dn(1,"y")),T(1,[K(2)],Dn(1,"x")),T(1,[K(3)],Dn(1))]);
 }
 /* 6 · svigi í nefnara */
-function g6(){
+/* tölur og breytur í nefnurum, teljari með breytu
+   "A": 2/5 + (6x − 1)/(10x)   "B": 1/(3x) + 2/(xy) − 4/x   "C": 2/3 − 1/x + x/2 */
+function g7(mode){
   for(var att=0;att<4000;att++){
-    var v=pick(VARS),k=1+rnd(6);
+    var m=mode||pick(["A","B","C"]),ts=[],v=pick(VARS),d1,d2;
+    if(m==="A"){
+      d1=pick([2,3,4,5,6]);d2=d1*pick([1,2,2,3]);
+      if(d2>12)continue;
+      ts=[T(1,[K(1+rnd(5))],Dn(d1)),T(sgn(.6),numer(v,pick(["cv+k","cv+k","k-cv","v+k"])),Dn(d2,v))];
+      if(Math.random()<.5){ts.reverse();ts[0].s=1;ts[1].s=sgn(.6)}
+    }else if(m==="B"){
+      var w=pick([["x","y"],["a","b"],["x","y"]]),xy={};xy[w[0]]=1;xy[w[1]]=1;
+      var pool=[{mono:M(1,xy),facs:[]},{mono:M(pick([2,3,4]),kv(w[0],1)),facs:[]},Dn(1,w[0]),Dn(1,w[1]),Dn(pick([2,3]))];
+      var idx=shuffled([0].concat(shuffled([1,2,3,4]).slice(0,2)));   /* w0·w1 alltaf með */
+      ts=idx.map(function(j,i){return T(i?sgn(.6):1,[K(1+rnd(5))],pool[j])});
+    }else{
+      d1=pick([2,3,4,5]);d2=pick([2,3,4,5]);
+      if(d1===d2)continue;
+      ts=shuffled([T(1,[K(1+rnd(4))],Dn(d1)),T(1,[K(1+rnd(4))],Dn(1,v)),T(1,[V(v,1+rnd(3))],Dn(d2))]);
+      ts.forEach(function(t,i){t.s=i?sgn(.5):1});
+    }
+    var p=build(ts);
+    if(okP(p)&&p.L.mono.c<=30)return p;
+  }
+  return build([T(1,[K(2)],Dn(3)),T(-1,[K(1)],Dn(1,"x")),T(1,[V("x")],Dn(2))]);
+}
+/* mode: "int" = heil tala og svigi (5 − 1/(a + 2)), "xv" = x/(x + 1) + 2/x, annars blandað */
+function g6(mode){
+  for(var att=0;att<4000;att++){
+    var v=pick(VARS),k=1+rnd(6),r=Math.random();
+    var m=mode||(r<.2?"int":r<.45?"xv":"");
     var F=Math.random()<.3?linRev(k,v):lin(v,pick([k,-k]));
-    var a=T(1,Math.random()<.2?[V(v)]:[K(1+rnd(5))],Df(F));
-    var b=Math.random()<.65?T(1,[K(1+rnd(5))],Dn(pick([2,3,4,5]))):T(1,[K(1+rnd(5))],Dn(1,v));
-    var ts=Math.random()<.5?[a,b]:[b,a];
-    ts[1].s=sgn(.6);
+    var a=T(1,(m==="xv"||(!m&&Math.random()<.25))?[V(v)]:[K(1+rnd(5))],Df(F)),b;
+    if(m==="int")b=T(1,[K(2+rnd(6))],Dn(1));
+    else if(m==="xv")b=T(1,[K(1+rnd(5))],Dn(1,v));
+    else b=Math.random()<.6?T(1,[K(1+rnd(5))],Dn(pick([2,3,4,5]))):T(1,[K(1+rnd(5))],Dn(1,v));
+    var ts=(m==="int"&&Math.random()<.75)||(m!=="int"&&Math.random()<.5)?[b,a]:[a,b];
+    ts[0].s=1;ts[1].s=sgn(m==="int"?.3:.6);
     var p=build(ts);
     if(okP(p))return p;
   }
@@ -822,9 +852,10 @@ var LEVELS=[
   {nm:"Heil tala með",ex:fx(vx,"2")+" + "+fx(vx,"3")+" &minus; 4",gen:g4},
   {nm:"Breyta í nefnara",ex:fx("1",vy)+" + "+fx("2",vx)+" + 3",gen:g5},
   {nm:"Svigi í nefnara",ex:fx("3",vk+" + 5")+" + "+fx("2","3"),gen:g6},
-  {nm:"Blandað",ex:"allar tegundir",gen:function(){return pick([g1,g2,g3,g4,g5,g6])()}}
+  {nm:"Tölur og breytur í nefnurum",ex:fx("2","5")+" + "+fx("6"+vx+" &minus; 1","10"+vx)+" &nbsp; "+fx("1","3"+vx)+" + "+fx("2",vx+vy),gen:g7},
+  {nm:"Blandað",ex:"allar tegundir",gen:function(){return pick([g1,g2,g3,g4,g5,g6,g7])()}}
 ];
-var DRILLMIX=[g1,g1,g2,g2,g2,g3,g3,g3,g4,g4,g5,g5,g6,g6];
+var DRILLMIX=[g1,g2,g2,g2,g3,g3,g3,g4,g4,g5,g5,g6,g6,g6,g7,g7,g7];
 var PROMPT_LEARN="Leggðu saman og einfaldaðu eins og hægt er.";
 var PROMPT_DRILL="Einfaldaðu eins og hægt er.";
 function drillGen(){return pick(DRILLMIX)()}
@@ -835,8 +866,14 @@ var KEY=PAGE+"-v1";
 var store={lvl:0,mode:"learn",stats:{}};
 try{
   var raw0=localStorage.getItem(KEY);
-  if(raw0){var pp=JSON.parse(raw0);if(pp&&typeof pp==="object"){store.lvl=pp.lvl|0;if(pp.mode)store.mode=pp.mode;if(pp.stats&&typeof pp.stats==="object")store.stats=pp.stats}}
+  if(raw0){var pp=JSON.parse(raw0);if(pp&&typeof pp==="object"){store.lvl=pp.lvl|0;if(pp.mode)store.mode=pp.mode;if(pp.stats&&typeof pp.stats==="object")store.stats=pp.stats;if(pp.v)store.v=pp.v}}
 }catch(e){}
+/* v2: ný stig bættust við á undan «Blandað» — færa tölfræði þess stigs */
+if(store.v!==2){
+  if(store.stats[6]){store.stats[7]=store.stats[6];delete store.stats[6]}
+  if(store.lvl===6)store.lvl=7;
+  store.v=2;
+}
 function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 function stat(i){
   if(!store.stats[i])store.stats[i]={best:0,done:false,tries:0,right:0};

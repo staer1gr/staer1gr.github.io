@@ -216,17 +216,16 @@ input[type=text]:focus{border-color:var(--accent)}
         <li><strong>Engin svör birtast meðan á prófinu stendur.</strong> Þú sérð hvað var rétt og rangt fyrst þegar þú skilar — eins og á prófi.</li>
         <li>Klukkan í horninu byrjar þegar þú ýtir á hnappinn. Hún stoppar þig ekki; hún er til þess að þú sjáir hvað þú ert lengi.</li>
         <li>Teljarinn fer í efri reitinn og nefnarinn í þann neðri — engir svigar utan um.</li>
-        <li>Í dæmum 1–3 (þátta og stytta) á svarið að vera <strong>fullstytt</strong>. Í samlagningardæmunum telst óstytt svar rétt, en þú færð að vita ef hægt var að stytta meira.</li>
+        <li>Í dæmum 1–3 (þátta, stytta og margfalda) á svarið að vera <strong>fullstytt</strong>. Í samlagningardæmunum telst óstytt svar rétt, en þú færð að vita ef hægt var að stytta meira.</li>
         <li>Skrifaðu brot með svigum utan um teljara og nefnara, t.d. <span class="mth">(x+2)/(x&minus;3)</span>.</li>
       </ol>
 
       <div class="kinds">
-        <div class="kind"><span class="kn">1&ndash;3. Þátta og stytta</span><span class="ke"><span class="frac"><span class="nu"><var>x</var><sup>2</sup> &minus; 4</span><span class="de"><var>x</var><sup>2</sup> + 4<var>x</var> + 4</span></span></span></div>
-        <div class="kind"><span class="kn">4&ndash;5. Samlagning, sami nefnari</span><span class="ke"><span class="frac"><span class="nu">4 &minus; <var>y</var></span><span class="de"><var>y</var> + 3</span></span> &minus; <span class="frac"><span class="nu">1 &minus; 2<var>y</var></span><span class="de"><var>y</var> + 3</span></span></span></div>
-        <div class="kind"><span class="kn">6&ndash;7. Ólíkir tölunefnarar</span><span class="ke"><span class="frac"><span class="nu"><var>x</var></span><span class="de">2</span></span> + <span class="frac"><span class="nu"><var>x</var></span><span class="de">3</span></span> &minus; 4</span></div>
-        <div class="kind"><span class="kn">8&ndash;10. Breyta eða svigi í nefnara</span><span class="ke"><span class="frac"><span class="nu">3</span><span class="de"><var>k</var> + 5</span></span> + <span class="frac"><span class="nu">2</span><span class="de">3</span></span></span></div>
+        <div class="kind"><span class="kn">1&ndash;3. Þátta, stytta og margfalda</span><span class="ke"><span class="frac"><span class="nu">6</span><span class="de">9 &minus; 3<var>x</var></span></span> &middot; <span class="frac"><span class="nu">3<var>x</var> &minus; <var>x</var><sup>2</sup></span><span class="de">2</span></span></span></div>
+        <div class="kind"><span class="kn">4. Samlagning, sami nefnari</span><span class="ke"><span class="frac"><span class="nu">3</span><span class="de"><var>x</var></span></span> + <span class="frac"><span class="nu">11</span><span class="de"><var>x</var></span></span> &minus; <span class="frac"><span class="nu">12</span><span class="de"><var>x</var></span></span></span></div>
+        <div class="kind"><span class="kn">5&ndash;9. Breyta eða svigi í nefnara</span><span class="ke"><span class="frac"><span class="nu">1</span><span class="de">3<var>x</var></span></span> + <span class="frac"><span class="nu">2</span><span class="de"><var>x</var><var>y</var></span></span> &minus; <span class="frac"><span class="nu">4</span><span class="de"><var>x</var></span></span></span></div>
+        <div class="kind"><span class="kn">10. Ólíkir tölunefnarar</span><span class="ke"><span class="frac"><span class="nu"><var>p</var> + 1</span><span class="de">4</span></span> &minus; <span class="frac"><span class="nu">3 &minus; <var>p</var></span><span class="de">5</span></span></span></div>
       </div>
-
       <button class="btn big" id="startbtn" type="button">Byrja prófið</button>
       <p class="best" id="bestline"></p>
     </div>
@@ -297,13 +296,16 @@ function pKey(P){return pNorm(P).map(function(t){return t.c+"*"+vkey(t.v)}).join
 function content(P){var c=0;for(var i=0;i<P.length;i++)c=gcd(c,P[i].c);return c||1}
 /* röðun til birtingar: hæsta veldi af x fyrst, svo hæsta heildarveldi */
 function dispSort(P){
-  return P.slice().sort(function(a,b){
+  var q=P.slice().sort(function(a,b){
     var xa=a.v.x||0,xb=b.v.x||0;
     if(xa!==xb)return xb-xa;
     var da=deg(a),db=deg(b);
     if(da!==db)return db-da;
     return vkey(a.v)<vkey(b.v)?-1:1;
   });
+  /* jákvæður liður fremst ef hægt er: 9 − 3x frekar en −3x + 9 */
+  if(q.length>1&&q[0].c<0){for(var i=1;i<q.length;i++)if(q[i].c>0){var t=q.splice(i,1)[0];q.unshift(t);break}}
+  return q;
 }
 function M(c,v){return{c:c,v:cleanV(v||{})}}
 function isTriv(m){return m.c===1&&Object.keys(m.v).length===0}
@@ -329,6 +331,8 @@ function linConst(P,vn){
   if(a!==1||k===null)return null;
   return k;
 }
+/* núllstöð þáttar af gerðinni x + k eða k − x, annars null */
+function linRoot(F){var k=linConst(F,"x");if(k!==null)return -k;var n=linConst(pNeg(F),"x");return n===null?null:-n}
 function evalAt(P,vals){
   var s=0;
   for(var i=0;i<P.length;i++){
@@ -415,6 +419,10 @@ function finish(nm,dn,show){
 }
 function hasCancel(p){return !isTriv(p.red.g)||p.red.common.length>0}
 function problemHtml(p){
+  if(p.show==="mul"){
+    var q=p.pieces;
+    return frac(pHtml(expand(q[0])),pHtml(expand(q[1])))+' <span class="op">&middot;</span> '+frac(pHtml(expand(q[2])),pHtml(expand(q[3])));
+  }
   return p.show==="factored"
     ? frac(partHtml(p.num),partHtml(p.den))
     : frac(pHtml(p.N),pHtml(p.D));
@@ -545,8 +553,8 @@ function whyNotReduced(N,D,p){
   var cand=p.num.facs.concat(p.den.facs),seen={};
   for(var j=0;j<cand.length;j++){
     var key=pKey(cand[j]);if(seen[key])continue;seen[key]=1;
-    var r=linConst(cand[j],"x");if(r===null)continue;
-    if(zeroAt(N,-r)&&zeroAt(D,-r))bits.push('<span class="mth">('+pHtml(dispSort(cand[j]))+")</span>");
+    var r=linRoot(cand[j]);if(r===null)continue;
+    if(zeroAt(N,r)&&zeroAt(D,r))bits.push('<span class="mth">('+pHtml(dispSort(cand[j]))+")</span>");
   }
   return bits;
 }
@@ -751,10 +759,61 @@ function tTolu(){
   }
 }
 
+/* ---- MARGFÖLDUN TVEGGJA BROTA: hver hluti birtist margfaldaður út ---- */
+function revX(k){return lin("x",-1,k)}          /* k − x */
+function mulP(A,B,swap){
+  if(swap){var t=A;A=B;B=t}
+  var p=finish(part(mMul(A[0].mono,B[0].mono),A[0].facs.concat(B[0].facs)),
+               part(mMul(A[1].mono,B[1].mono),A[1].facs.concat(B[1].facs)),"mul");
+  p.pieces=[A[0],A[1],B[0],B[1]];
+  return p;
+}
+function mulOk(p,lim){
+  for(var i=0;i<4;i++){var E=expand(p.pieces[i]);if(maxDeg(E)>2||maxCoef(E)>lim)return false}
+  return hasCancel(p)&&p.red.den.mono.c<=12&&p.red.num.mono.c<=12;
+}
+/* 1 · út fyrir sviga, sami svigi í báðum brotum: 6/(9 − 3x) · (3x − x²)/2 */
+function tMulA(){
+  for(var att=0;att<5000;att++){
+    var F=Math.random()<.5?revX(1+rnd(9)):X(nz(9));
+    var a1=part(M(pick([2,3,4,5,6,8,9,10,12]),Math.random()<.25?{x:1}:{}),[]);
+    var a2=part(M(pick([2,3,4,5])),[F]);
+    var b1=part(Math.random()<.65?M(pick([1,1,2,3]),{x:1}):M(pick([2,3,4,5,6])),[F]);
+    var b2=part(M(pick([2,3,4,5,6]),Math.random()<.25?{x:1}:{}),[]);
+    var p=mulP([a1,a2],[b1,b2],Math.random()<.4);
+    if(mulOk(p,60))return p;
+  }
+  return mulP([part(M(6),[]),part(M(3),[revX(3)])],[part(M(1,{x:1}),[revX(3)]),part(M(2),[])],false);
+}
+/* 2 · ágiskun eða samoka, stytt þvert á brotin: (x² + x)/(x² − x − 2) · (x − 2)/x */
+function tMulB(){
+  for(var att=0;att<5000;att++){
+    var a=nz(7),b=nz(7),c=nz(7),o=rnd(3),a1,b2;
+    if(a===b||c===a||c===b)continue;
+    var Q=part(M(1),shuffled([X(a),X(b)]));
+    if(o===0){a1=part(M(pick([1,1,2,3]),{x:1}),[X(a)]);b2=part(M(pick([1,1,1,2,3,4]),{x:1}),[])}
+    else if(o===1){a1=part(M(pick([2,3,4,5])),[X(a)]);b2=part(M(pick([2,3,4,6,8,10])),[])}
+    else{a1=part(M(1),[X(a)]);b2=part(M(1),[X(c)])}
+    var b1=part(Math.random()<.75?M(1):M(pick([2,3])),[X(b)]);
+    var A=[a1,Q],B=[b1,b2];
+    if(Math.random()<.3){A=[Q,a1];B=[b2,b1]}
+    var p=mulP(A,B,Math.random()<.3);
+    if(mulOk(p,60))return p;
+  }
+  return mulP([part(M(1,{x:1}),[X(1)]),part(M(1),[X(-2),X(1)])],[part(M(1),[X(-2)]),part(M(1,{x:1}),[])],false);
+}
+
 /* ════════ lausn í skrefum ════════ */
 function solutionList(p){
   var h="",r=p.red;
-  if(p.show==="expanded"){
+  if(p.show==="mul"){
+    var nm=["Teljari fyrra brots","Nefnari fyrra brots","Teljari seinna brots","Nefnari seinna brots"];
+    for(var m=0;m<4;m++){
+      var q=p.pieces[m];
+      if(isFactorable(q))h+="<li>"+nm[m]+': <span class="mth">'+pHtml(expand(q))+" = "+partHtml(q)+'</span> <span class="why">'+method(q)+"</span></li>";
+    }
+    h+='<li>Eitt brotastrik: <span class="mth">'+frac(partHtml(p.num),partHtml(p.den))+'</span> <span class="why">teljari sinnum teljari, nefnari sinnum nefnari — ekki margfalda út</span></li>';
+  }else if(p.show==="expanded"){
     var sides=[["Teljari",p.num,p.N],["Nefnari",p.den,p.D]];
     for(var i=0;i<2;i++){
       var s=sides[i];
@@ -1163,7 +1222,7 @@ function rnd(n){return Math.floor(Math.random()*n)}
 function pick(a){return a[rnd(a.length)]}
 function nz(n){var k;do{k=rnd(2*n+1)-n}while(k===0);return k}
 function shuffled(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=rnd(i+1),t=b[i];b[i]=b[j];b[j]=t}return b}
-var VARS=["x","x","x","a","a","y","t","k"];
+var VARS=["x","x","x","a","a","y","t","k","p"];
 function V(v,c){return{c:c==null?1:c,v:kv(v,1)}}
 function K(c){return{c:c,v:{}}}
 function Dn(c,v){return{mono:M(c,v?kv(v,1):{}),facs:[]}}
@@ -1249,19 +1308,19 @@ function g2(){
   return build([T(1,[K(4),V("y",-1)],y),T(-1,[K(1),V("y",-2)],y)]);
 }
 /* 3 · ólíkir tölunefnarar */
-function g3(){
+function g3(mode){   /* mode "bin": tveir tvíliðir, mínus fyrir framan seinni */
   for(var att=0;att<4000;att++){
-    var v=pick(VARS),n=Math.random()<.7?2:3,dens=[],i;
+    var v=pick(VARS),n=(mode==="bin"||Math.random()<.7)?2:3,dens=[],i;
     for(i=0;i<n;i++)dens.push(pick([2,3,4,5,6,8,10,12]));
     var l=dens.reduce(lcm,1),uniq={};dens.forEach(function(x){uniq[x]=1});
     if(Object.keys(uniq).length<2||l>(n===2?24:12))continue;
     var ts=[],allcv=(n===3&&Math.random()<.6),hv=false;
     for(i=0;i<n;i++){
-      var kind=allcv?"cv":pick(["cv","cv","k","v+k","cv+k","k-cv"]);
+      var kind=mode==="bin"?pick(["v+k","cv+k","k-cv"]):allcv?"cv":pick(["cv","cv","k","v+k","cv+k","k-cv"]);
       if(i===n-1&&!hv)kind="cv";
       var nd=numer(v,kind);if(hasVar(nd))hv=true;
       if(allcv)nd=[V(v,1+rnd(11))];
-      ts.push(T(i?sgn(.55):1,nd,Dn(dens[i])));
+      ts.push(T(i?sgn(mode==="bin"?.2:.55):1,nd,Dn(dens[i])));
     }
     var p=build(ts);
     if(okP(p)&&hasVar(p.N))return p;
@@ -1307,14 +1366,44 @@ function g5(){
   return build([T(1,[K(1)],Dn(1,"y")),T(1,[K(2)],Dn(1,"x")),T(1,[K(3)],Dn(1))]);
 }
 /* 6 · svigi í nefnara */
-function g6(){
+/* tölur og breytur í nefnurum, teljari með breytu
+   "A": 2/5 + (6x − 1)/(10x)   "B": 1/(3x) + 2/(xy) − 4/x   "C": 2/3 − 1/x + x/2 */
+function g7(mode){
   for(var att=0;att<4000;att++){
-    var v=pick(VARS),k=1+rnd(6);
+    var m=mode||pick(["A","B","C"]),ts=[],v=pick(VARS),d1,d2;
+    if(m==="A"){
+      d1=pick([2,3,4,5,6]);d2=d1*pick([1,2,2,3]);
+      if(d2>12)continue;
+      ts=[T(1,[K(1+rnd(5))],Dn(d1)),T(sgn(.6),numer(v,pick(["cv+k","cv+k","k-cv","v+k"])),Dn(d2,v))];
+      if(Math.random()<.5){ts.reverse();ts[0].s=1;ts[1].s=sgn(.6)}
+    }else if(m==="B"){
+      var w=pick([["x","y"],["a","b"],["x","y"]]),xy={};xy[w[0]]=1;xy[w[1]]=1;
+      var pool=[{mono:M(1,xy),facs:[]},{mono:M(pick([2,3,4]),kv(w[0],1)),facs:[]},Dn(1,w[0]),Dn(1,w[1]),Dn(pick([2,3]))];
+      var idx=shuffled([0].concat(shuffled([1,2,3,4]).slice(0,2)));   /* w0·w1 alltaf með */
+      ts=idx.map(function(j,i){return T(i?sgn(.6):1,[K(1+rnd(5))],pool[j])});
+    }else{
+      d1=pick([2,3,4,5]);d2=pick([2,3,4,5]);
+      if(d1===d2)continue;
+      ts=shuffled([T(1,[K(1+rnd(4))],Dn(d1)),T(1,[K(1+rnd(4))],Dn(1,v)),T(1,[V(v,1+rnd(3))],Dn(d2))]);
+      ts.forEach(function(t,i){t.s=i?sgn(.5):1});
+    }
+    var p=build(ts);
+    if(okP(p)&&p.L.mono.c<=30)return p;
+  }
+  return build([T(1,[K(2)],Dn(3)),T(-1,[K(1)],Dn(1,"x")),T(1,[V("x")],Dn(2))]);
+}
+/* mode: "int" = heil tala og svigi (5 − 1/(a + 2)), "xv" = x/(x + 1) + 2/x, annars blandað */
+function g6(mode){
+  for(var att=0;att<4000;att++){
+    var v=pick(VARS),k=1+rnd(6),r=Math.random();
+    var m=mode||(r<.2?"int":r<.45?"xv":"");
     var F=Math.random()<.3?linRev(k,v):lin(v,pick([k,-k]));
-    var a=T(1,Math.random()<.2?[V(v)]:[K(1+rnd(5))],Df(F));
-    var b=Math.random()<.65?T(1,[K(1+rnd(5))],Dn(pick([2,3,4,5]))):T(1,[K(1+rnd(5))],Dn(1,v));
-    var ts=Math.random()<.5?[a,b]:[b,a];
-    ts[1].s=sgn(.6);
+    var a=T(1,(m==="xv"||(!m&&Math.random()<.25))?[V(v)]:[K(1+rnd(5))],Df(F)),b;
+    if(m==="int")b=T(1,[K(2+rnd(6))],Dn(1));
+    else if(m==="xv")b=T(1,[K(1+rnd(5))],Dn(1,v));
+    else b=Math.random()<.6?T(1,[K(1+rnd(5))],Dn(pick([2,3,4,5]))):T(1,[K(1+rnd(5))],Dn(1,v));
+    var ts=(m==="int"&&Math.random()<.75)||(m!=="int"&&Math.random()<.5)?[b,a]:[a,b];
+    ts[0].s=1;ts[1].s=sgn(m==="int"?.3:.6);
     var p=build(ts);
     if(okP(p))return p;
   }
@@ -1350,26 +1439,26 @@ function reasonHtml(r){
   return '<p class="why">Svarið er ekki jafnt summunni. Athugaðu samnefnarann, lenginguna og formerkin.</p>';
 }
 function key(p){return p.terms.map(function(t){return t.s+":"+pKey(t.n)+"/"+pKey(expandD(t.d))}).join("|")}
-return{g1:g1,g2:g2,g3:g3,g4:g4,g5:g5,g6:g6,problemHtml:problemHtml,ansHtml:ansHtml,check:check,
+return{g1:g1,g2:g2,g3:g3,g4:g4,g5:g5,g6:g6,g7:g7,problemHtml:problemHtml,ansHtml:ansHtml,check:check,
        solutionList:solutionList,reasonHtml:reasonHtml,key:key};
 })();
 
-/* ════════ prófgrind: 3 + 7 dæmi, létt → erfitt innan hvors flokks ════════ */
+/* ════════ prófgrind: fylgir lotuprófi 5 dæmi fyrir dæmi ════════ */
 function tag(cat,f){return function(){var p=f();p.cat=cat;if(!p.terms)p.kind="tt";else p.kind="sl";return p}}
 var BLUEPRINT=[
-  tag("tt",tUt),                                         /* 1  út fyrir sviga */
-  tag("tt",function(){return pick([tAgi,tSam])()}),      /* 2  ágiskun eða samoka í öðrum hlutanum */
-  tag("tt",function(){return pick([tBada,tTolu])()}),    /* 3  þátta bæði / tölufastur þáttur fyrst */
-  tag("same",SL.g1),                                     /* 4  sami tölunefnari */
-  tag("same",SL.g2),                                     /* 5  sami nefnari með breytu */
-  tag("num",SL.g3),                                      /* 6  ólíkir tölunefnarar */
-  tag("num",SL.g4),                                      /* 7  heil tala með */
-  tag("var",SL.g5),                                      /* 8  breyta í nefnara */
-  tag("var",SL.g6),                                      /* 9  svigi í nefnara */
-  tag("var",function(){return pick([SL.g5,SL.g6])()})    /* 10 breyta eða svigi í nefnara */
+  tag("tt",function(){return pick([tAgi,tAgi,tSam])()}), /* 1  þátta annan hlutann og stytta */
+  tag("tt",tMulA),                                       /* 2  margföldun brota, út fyrir sviga (k − x) */
+  tag("tt",tMulB),                                       /* 3  margföldun brota, ágiskun/samoka, stytt þvert á */
+  tag("same",SL.g2),                                     /* 4  sami nefnari */
+  tag("var",function(){return SL.g7("A")}),              /* 5  2/5 + (6x − 1)/(10x) */
+  tag("var",function(){return SL.g7("B")}),              /* 6  1/(3x) + 2/(xy) − 4/x */
+  tag("var",function(){return SL.g6("int")}),            /* 7  5 − 1/(a + 2) */
+  tag("var",function(){return SL.g6("xv")}),             /* 8  x/(x + 1) + 2/x */
+  tag("var",function(){return SL.g7("C")}),              /* 9  2/3 − 1/x + x/2 */
+  tag("num",function(){return SL.g3("bin")})             /* 10 (p + 1)/4 − (3 − p)/5 */
 ];
-var CATNM={tt:"Þátta og stytta",same:"Samlagning — sami nefnari",num:"Samlagning — ólíkir tölunefnarar",var:"Samlagning — breyta eða svigi í nefnara"};
-var CATS=["tt","same","num","var"];
+var CATNM={tt:"Þátta, stytta og margfalda",same:"Samlagning — sami nefnari",num:"Samlagning — ólíkir tölunefnarar",var:"Samlagning — breyta eða svigi í nefnara"};
+var CATS=["tt","same","var","num"];
 var KINDURL={tt:"../thatta-stytta/",same:"../samlagning/",num:"../samlagning/",var:"../samlagning/"};
 
 function qKey(p){return p.kind==="sl"?SL.key(p):pKey(p.N)+"|"+pKey(p.D)}
