@@ -257,13 +257,16 @@ function pKey(P){return pNorm(P).map(function(t){return t.c+"*"+vkey(t.v)}).join
 function content(P){var c=0;for(var i=0;i<P.length;i++)c=gcd(c,P[i].c);return c||1}
 /* röðun til birtingar: hæsta veldi af x fyrst, svo hæsta heildarveldi */
 function dispSort(P){
-  return P.slice().sort(function(a,b){
+  var q=P.slice().sort(function(a,b){
     var xa=a.v.x||0,xb=b.v.x||0;
     if(xa!==xb)return xb-xa;
     var da=deg(a),db=deg(b);
     if(da!==db)return db-da;
     return vkey(a.v)<vkey(b.v)?-1:1;
   });
+  /* jákvæður liður fremst ef hægt er: 9 − 3x frekar en −3x + 9 */
+  if(q.length>1&&q[0].c<0){for(var i=1;i<q.length;i++)if(q[i].c>0){var t=q.splice(i,1)[0];q.unshift(t);break}}
+  return q;
 }
 function M(c,v){return{c:c,v:cleanV(v||{})}}
 function isTriv(m){return m.c===1&&Object.keys(m.v).length===0}
@@ -289,6 +292,8 @@ function linConst(P,vn){
   if(a!==1||k===null)return null;
   return k;
 }
+/* núllstöð þáttar af gerðinni x + k eða k − x, annars null */
+function linRoot(F){var k=linConst(F,"x");if(k!==null)return -k;var n=linConst(pNeg(F),"x");return n===null?null:-n}
 function evalAt(P,vals){
   var s=0;
   for(var i=0;i<P.length;i++){
@@ -375,6 +380,10 @@ function finish(nm,dn,show){
 }
 function hasCancel(p){return !isTriv(p.red.g)||p.red.common.length>0}
 function problemHtml(p){
+  if(p.show==="mul"){
+    var q=p.pieces;
+    return frac(pHtml(expand(q[0])),pHtml(expand(q[1])))+' <span class="op">&middot;</span> '+frac(pHtml(expand(q[2])),pHtml(expand(q[3])));
+  }
   return p.show==="factored"
     ? frac(partHtml(p.num),partHtml(p.den))
     : frac(pHtml(p.N),pHtml(p.D));
@@ -505,8 +514,8 @@ function whyNotReduced(N,D,p){
   var cand=p.num.facs.concat(p.den.facs),seen={};
   for(var j=0;j<cand.length;j++){
     var key=pKey(cand[j]);if(seen[key])continue;seen[key]=1;
-    var r=linConst(cand[j],"x");if(r===null)continue;
-    if(zeroAt(N,-r)&&zeroAt(D,-r))bits.push('<span class="mth">('+pHtml(dispSort(cand[j]))+")</span>");
+    var r=linRoot(cand[j]);if(r===null)continue;
+    if(zeroAt(N,r)&&zeroAt(D,r))bits.push('<span class="mth">('+pHtml(dispSort(cand[j]))+")</span>");
   }
   return bits;
 }
@@ -711,10 +720,61 @@ function tTolu(){
   }
 }
 
+/* ---- MARGFÖLDUN TVEGGJA BROTA: hver hluti birtist margfaldaður út ---- */
+function revX(k){return lin("x",-1,k)}          /* k − x */
+function mulP(A,B,swap){
+  if(swap){var t=A;A=B;B=t}
+  var p=finish(part(mMul(A[0].mono,B[0].mono),A[0].facs.concat(B[0].facs)),
+               part(mMul(A[1].mono,B[1].mono),A[1].facs.concat(B[1].facs)),"mul");
+  p.pieces=[A[0],A[1],B[0],B[1]];
+  return p;
+}
+function mulOk(p,lim){
+  for(var i=0;i<4;i++){var E=expand(p.pieces[i]);if(maxDeg(E)>2||maxCoef(E)>lim)return false}
+  return hasCancel(p)&&p.red.den.mono.c<=12&&p.red.num.mono.c<=12;
+}
+/* 1 · út fyrir sviga, sami svigi í báðum brotum: 6/(9 − 3x) · (3x − x²)/2 */
+function tMulA(){
+  for(var att=0;att<5000;att++){
+    var F=Math.random()<.5?revX(1+rnd(9)):X(nz(9));
+    var a1=part(M(pick([2,3,4,5,6,8,9,10,12]),Math.random()<.25?{x:1}:{}),[]);
+    var a2=part(M(pick([2,3,4,5])),[F]);
+    var b1=part(Math.random()<.65?M(pick([1,1,2,3]),{x:1}):M(pick([2,3,4,5,6])),[F]);
+    var b2=part(M(pick([2,3,4,5,6]),Math.random()<.25?{x:1}:{}),[]);
+    var p=mulP([a1,a2],[b1,b2],Math.random()<.4);
+    if(mulOk(p,60))return p;
+  }
+  return mulP([part(M(6),[]),part(M(3),[revX(3)])],[part(M(1,{x:1}),[revX(3)]),part(M(2),[])],false);
+}
+/* 2 · ágiskun eða samoka, stytt þvert á brotin: (x² + x)/(x² − x − 2) · (x − 2)/x */
+function tMulB(){
+  for(var att=0;att<5000;att++){
+    var a=nz(7),b=nz(7),c=nz(7),o=rnd(3),a1,b2;
+    if(a===b||c===a||c===b)continue;
+    var Q=part(M(1),shuffled([X(a),X(b)]));
+    if(o===0){a1=part(M(pick([1,1,2,3]),{x:1}),[X(a)]);b2=part(M(pick([1,1,1,2,3,4]),{x:1}),[])}
+    else if(o===1){a1=part(M(pick([2,3,4,5])),[X(a)]);b2=part(M(pick([2,3,4,6,8,10])),[])}
+    else{a1=part(M(1),[X(a)]);b2=part(M(1),[X(c)])}
+    var b1=part(Math.random()<.75?M(1):M(pick([2,3])),[X(b)]);
+    var A=[a1,Q],B=[b1,b2];
+    if(Math.random()<.3){A=[Q,a1];B=[b2,b1]}
+    var p=mulP(A,B,Math.random()<.3);
+    if(mulOk(p,60))return p;
+  }
+  return mulP([part(M(1,{x:1}),[X(1)]),part(M(1),[X(-2),X(1)])],[part(M(1),[X(-2)]),part(M(1,{x:1}),[])],false);
+}
+
 /* ════════ lausn í skrefum ════════ */
 function solutionList(p){
   var h="",r=p.red;
-  if(p.show==="expanded"){
+  if(p.show==="mul"){
+    var nm=["Teljari fyrra brots","Nefnari fyrra brots","Teljari seinna brots","Nefnari seinna brots"];
+    for(var m=0;m<4;m++){
+      var q=p.pieces[m];
+      if(isFactorable(q))h+="<li>"+nm[m]+': <span class="mth">'+pHtml(expand(q))+" = "+partHtml(q)+'</span> <span class="why">'+method(q)+"</span></li>";
+    }
+    h+='<li>Eitt brotastrik: <span class="mth">'+frac(partHtml(p.num),partHtml(p.den))+'</span> <span class="why">teljari sinnum teljari, nefnari sinnum nefnari — ekki margfalda út</span></li>';
+  }else if(p.show==="expanded"){
     var sides=[["Teljari",p.num,p.N],["Nefnari",p.den,p.D]];
     for(var i=0;i<2;i++){
       var s=sides[i];
@@ -757,9 +817,11 @@ if(PAGE==="stytta"){
     {nm:"Samokareglan",ex:fx("<var>x</var>&minus;3","<var>x</var><sup>2</sup>&minus;9"),gen:tSam},
     {nm:"Þátta bæði",ex:fx("<var>x</var><sup>2</sup>&minus;4","<var>x</var><sup>2</sup>+4<var>x</var>+4"),gen:tBada},
     {nm:"Tölufastur þáttur fyrst",ex:fx("2<var>x</var><sup>2</sup>+2<var>x</var>&minus;12","6<var>x</var><sup>2</sup>+18<var>x</var>"),gen:tTolu},
-    {nm:"Blandað",ex:"allar tegundir",gen:function(){return pick([tUt,tAgi,tSam,tBada,tTolu])()}}
+    {nm:"Margföldun brota",ex:fx("6","9 &minus; 3<var>x</var>")+" &middot; "+fx("3<var>x</var> &minus; <var>x</var><sup>2</sup>","2"),gen:tMulA},
+    {nm:"Margföldun með ágiskun",ex:fx("<var>x</var><sup>2</sup> + <var>x</var>","<var>x</var><sup>2</sup> &minus; <var>x</var> &minus; 2")+" &middot; "+fx("<var>x</var> &minus; 2","<var>x</var>"),gen:tMulB},
+    {nm:"Blandað",ex:"allar tegundir",gen:function(){return pick([tUt,tAgi,tSam,tBada,tTolu,tMulA,tMulB])()}}
   ];
-  DRILLMIX=[tUt,tUt,tUt,tUt,tAgi,tAgi,tAgi,tSam,tSam,tBada,tBada,tBada,tTolu,tTolu];
+  DRILLMIX=[tUt,tUt,tUt,tAgi,tAgi,tAgi,tSam,tSam,tBada,tBada,tTolu,tTolu,tMulA,tMulA,tMulA,tMulB,tMulB,tMulB];
   PROMPT_LEARN="Þáttaðu teljarann og nefnarann, og styttu svo eins og hægt er.";
   PROMPT_DRILL="Einfaldaðu eins og hægt er.";
 }
@@ -771,8 +833,14 @@ var KEY=PAGE+"-v1";
 var store={lvl:0,mode:"learn",stats:{}};
 try{
   var raw0=localStorage.getItem(KEY);
-  if(raw0){var pp=JSON.parse(raw0);if(pp&&typeof pp==="object"){store.lvl=pp.lvl|0;if(pp.mode)store.mode=pp.mode;if(pp.stats&&typeof pp.stats==="object")store.stats=pp.stats}}
+  if(raw0){var pp=JSON.parse(raw0);if(pp&&typeof pp==="object"){store.lvl=pp.lvl|0;if(pp.mode)store.mode=pp.mode;if(pp.stats&&typeof pp.stats==="object")store.stats=pp.stats;if(pp.v)store.v=pp.v}}
 }catch(e){}
+/* v2: ný stig bættust við á undan «Blandað» — færa tölfræði þess stigs */
+if(store.v!==2){
+  if(store.stats[5]){store.stats[7]=store.stats[5];delete store.stats[5]}
+  if(store.lvl===5)store.lvl=7;
+  store.v=2;
+}
 function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 function stat(i){
   if(!store.stats[i])store.stats[i]={best:0,done:false,tries:0,right:0};
@@ -878,7 +946,23 @@ function workedSteps(){
 function hint(){
   hintStep=Math.min(hintStep+1,4);
   var p=prob,r=p.red,h;
-  if(PAGE==="stytta"){
+  if(p.show==="mul"){
+    var q=p.pieces;
+    if(hintStep===1){
+      h='<p class="lbl">Vísbending 1 af 4 · þáttaðu hvern hluta</p>'+
+        "<p>Ekki margfalda út! Þáttaðu teljara og nefnara beggja brotanna fyrst:</p><p>"+
+        ["Fyrri teljari","Fyrri nefnari","Seinni teljari","Seinni nefnari"].map(function(t,i){return t+": <strong>"+method(q[i])+"</strong>"}).join("<br>")+"</p>";
+    }else if(hintStep===2){
+      h='<p class="lbl">Vísbending 2 af 4 · þáttað</p><p class="big">'+
+        frac(partHtml(q[0]),partHtml(q[1]))+' <span class="op">&middot;</span> '+frac(partHtml(q[2]),partHtml(q[3]))+"</p>";
+    }else if(hintStep===3){
+      h='<p class="lbl">Vísbending 3 af 4 · eitt brotastrik</p><p>Teljari sinnum teljari og nefnari sinnum nefnari — en ekki margfalda út:</p><p class="big">'+
+        frac(partHtml(p.num),partHtml(p.den))+"</p>";
+    }else{
+      h='<p class="lbl">Vísbending 4 af 4 · styttu</p><p>Sameiginlegt: '+commonText(p)+'.</p><p class="big">'+struckHtml(p)+
+        "</p><p>Það sem eftir stendur er svarið.</p>";
+    }
+  }else if(PAGE==="stytta"){
     if(hintStep===1){
       h='<p class="lbl">Vísbending 1 af 4 · hvað má stytta?</p>'+
         "<p>Aðeins <strong>þættir</strong> styttast — ekki liðir. Leitaðu að því sem er margfaldað inn í <em>allan</em> teljarann og <em>allan</em> nefnarann.</p>"+
