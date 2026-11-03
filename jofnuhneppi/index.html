@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none !important}
+img{max-width:100%}
+</style>
+<title>Jöfnuhneppi</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one focused problem card on graph-paper ground; streak meter directly above the answer field; level map below. */
+:root{
+  --bg:#eceff3; --grid:#dae0e8; --paper:#ffffff; --paper-2:#f4f7fa;
+  --ink:#131e28; --muted:#58687a; --line:#d7dee6;
+  --accent:#1b5a86; --accent-soft:#e2ecf4;
+  --good:#166b3d; --good-soft:#dff0e6;
+  --bad:#a4331f; --bad-soft:#f8e5e1;
+  --streak:#9c6510;
+  --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --font-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-math:"Newsreader",Georgia,"Times New Roman",serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-body); font-size:16px; line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px; background-position:-1px -1px;
+}
+.wrap{max-width:660px; margin:0 auto; padding-inline:16px; padding-block:22px 48px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px}
+h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.5rem,5vw,2rem); margin:0; letter-spacing:-.01em; text-wrap:balance}
+.tagline{margin:.15rem 0 0; color:var(--muted); font-size:.9rem; max-width:34em}
+.themebtn{font-family:var(--font-body); font-size:.78rem; color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:.35rem .7rem; cursor:pointer}
+.themebtn:hover{color:var(--ink)}
+
+.controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px}
+.seg{display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:3px}
+.seg button{font:inherit; font-size:.86rem; font-weight:600; border:0; background:transparent; color:var(--muted); padding:.38rem .9rem; border-radius:99px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--paper)}
+select{font:inherit; font-size:.86rem; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:99px; padding:.42rem .7rem; max-width:100%}
+.modenote{margin:0 0 14px; font-size:.82rem; color:var(--muted)}
+
+.card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:20px 18px; box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+.prompt{margin:.2rem 0 0; font-size:.92rem; color:var(--muted)}
+.problem{font-family:var(--font-math); font-size:clamp(1.7rem,6.5vw,2.5rem); line-height:1.3; margin:.35rem 0 .1rem; overflow-x:auto; padding-bottom:.15rem}
+.problem .op{color:var(--muted); padding:0 .1em}
+sup{font-size:.62em; line-height:0; vertical-align:.5em}
+var{font-family:var(--font-math); font-style:italic}
+
+.meter{margin-top:16px; padding-top:14px; border-top:1px solid var(--line)}
+.meterhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.meterlabel{font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600}
+.meterstat{font-size:.8rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.dots{display:flex; gap:5px; margin-top:8px}
+.dot{flex:1 1 0; min-width:0; height:9px; border-radius:99px; background:var(--paper-2); border:1px solid var(--line)}
+.dot.on{background:var(--streak); border-color:var(--streak)}
+
+.answerrow{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+input[type=text]{
+  flex:1 1 180px; min-width:0; font-family:var(--font-math); font-size:1.35rem;
+  padding:.5rem .65rem; border:1.5px solid var(--line); border-radius:8px;
+  background:var(--paper-2); color:var(--ink);
+}
+input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+.btn{font:inherit; font-weight:600; font-size:.95rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:var(--paper); cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft); filter:none}
+.btn:focus-visible,.seg button:focus-visible,.themebtn:focus-visible,.lvl:focus-visible,.linky:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.keys{display:flex; gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap}
+.keys button{font-family:var(--font-math); font-size:1rem; width:2.1rem; height:2.1rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer}
+.keys .hint{font-family:var(--font-body); font-size:.78rem; color:var(--muted); margin-left:4px}
+.keys .mth{font-family:var(--font-math)}
+.keys button.pow{width:2.5rem; color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button sup{font-size:.65em; vertical-align:.55em; line-height:0}
+.preview{margin-top:8px; font-size:.82rem; color:var(--muted)}
+.preview .plab{text-transform:uppercase; letter-spacing:.08em; font-weight:600; font-size:.72rem}
+.preview .pv{font-family:var(--font-math); font-size:1.3rem; color:var(--ink)}
+.preview .pv sup{font-size:.62em; vertical-align:.55em; line-height:0}
+
+.fb{margin-top:14px; border-radius:8px; padding:12px 14px; font-size:.94rem; border:1px solid var(--line); background:var(--paper-2)}
+.fb.good{background:var(--good-soft); border-color:var(--good)}
+.fb.bad{background:var(--bad-soft); border-color:var(--bad)}
+.fb.neutral{background:var(--accent-soft); border-color:var(--accent)}
+.fb .mth{font-family:var(--font-math); font-size:1.15em}
+.fb p{margin:.3rem 0}
+.fb ol{margin:.4rem 0 .1rem; padding-left:1.4rem}
+.fb li{font-family:var(--font-math); font-size:1.08rem; margin:.12rem 0}
+.fb .lbl{font-family:var(--font-body); font-size:.76rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; margin-top:0}
+.actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+
+.map{margin-top:32px}
+.map h2{font-family:var(--font-display); font-weight:500; font-size:1.15rem; margin:0 0 .2rem}
+.mapnote{margin:0 0 .7rem; font-size:.82rem; color:var(--muted)}
+.levels{display:grid; gap:8px; margin:0; padding:0; list-style:none}
+.lvl{display:flex; align-items:center; gap:12px; background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:8px; padding:10px 12px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer}
+.lvl:hover{border-color:var(--accent)}
+.lvl[data-cur="1"]{border-left-color:var(--accent)}
+.lvl[data-done="1"]{border-left-color:var(--good)}
+.lvl .n{font-family:var(--font-display); font-size:1.05rem; color:var(--muted); width:1.2em; flex:none; font-variant-numeric:tabular-nums}
+.lvl .txt{flex:1 1 auto; min-width:0}
+.lvl .nm{font-weight:600; font-size:.95rem}
+.lvl .ex{font-family:var(--font-math); font-size:.95rem; color:var(--muted)}
+.lvl .st{flex:none; font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right}
+.lvl[data-done="1"] .st{color:var(--good); font-weight:600}
+.foot{margin-top:22px; font-size:.82rem; color:var(--muted); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center}
+.linky{background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer}
+.sitefoot{margin-top:28px; padding-top:16px; border-top:1px solid var(--line); text-align:center}
+.sitefoot p{margin:0; font-family:var(--font-display); font-size:.95rem; color:var(--muted)}
+.sitefoot .who{color:var(--ink); font-weight:500}
+@media (prefers-reduced-motion:no-preference){.dot{transition:background .18s ease,border-color .18s ease}}
+</style>
+<style>
+.xlab{font-family:var(--font-math); font-size:1.35rem; align-self:center; white-space:nowrap}
+.xlab var{font-size:1.1em}
+.answerrow input.mul{flex:0 1 5.5rem}
+.answerrow input.val{flex:1 1 7rem}
+.frac{display:inline-flex; flex-direction:column; align-items:stretch; vertical-align:middle; margin:0 .1em; line-height:1.15; text-align:center; font-size:.9em}
+.frac>.nu{padding:0 .25em .08em; border-bottom:max(1.5px,.055em) solid currentColor; white-space:nowrap}
+.frac>.de{padding:.08em .25em 0; white-space:nowrap}
+/* jöfnuhneppi sem talnadálkar: stuðlar raðast undir hvor annan eins og í samlagningu */
+.sysw{overflow-x:auto; padding-bottom:.15rem}
+.sys{display:inline-grid; grid-template-columns:auto auto auto auto auto auto; column-gap:.32em; row-gap:.1em; align-items:baseline; font-family:var(--font-math); white-space:nowrap}
+.sys>span{text-align:right}
+.sys .lab{font-family:var(--font-body); font-size:.62em; color:var(--muted); text-align:left; padding-right:.5em; font-variant-numeric:tabular-nums}
+.sys .op,.sys .eqs{text-align:center; color:var(--muted)}
+.sys .rule{grid-column:2 / -1; border-top:2px solid var(--ink); height:0; margin:.1em 0 .05em}
+.sys .gone{color:var(--streak); font-weight:600}
+.problem .sys{font-size:clamp(1.5rem,6vw,2.2rem); line-height:1.3}
+.problem{white-space:normal}
+.fb .sys,.work .sys{font-size:1.2rem}
+.lvl .ex{font-size:1rem}
+.lvl .ex .sep{font-family:var(--font-body); color:var(--line); padding:0 .45em}
+.work{margin-top:14px; padding-top:12px; border-top:1px dashed var(--line)}
+.work .wstep{margin:0 0 .7rem}
+.work .wlab{font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600}
+.work .wtxt{font-size:.9rem; margin:.1rem 0 .3rem}
+.work .line{font-family:var(--font-math); font-size:1.2rem; overflow-x:auto; white-space:nowrap}
+.line .then{color:var(--muted); font-family:var(--font-body); font-size:.85em; padding:0 .5em}
+.fb .se{display:block; font-family:var(--font-math); font-size:1.12rem; overflow-x:auto; white-space:nowrap; padding:.15rem 0}
+.fb li{font-family:var(--font-body); font-size:.94rem; margin:.45rem 0}
+.fb .chk{list-style:none; margin-left:-1.4rem; padding-top:.4rem; border-top:1px dashed var(--line)}
+.fb .big{font-family:var(--font-math); font-size:1.2rem; overflow-x:auto; white-space:nowrap}
+.ok{color:var(--good); font-weight:600}
+.no{color:var(--bad); font-weight:600}
+.tipbox{margin-top:14px; font-size:.86rem; color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 13px}
+.tipbox strong{color:var(--ink); font-weight:600}
+.tipbox ol{margin:.3rem 0 0; padding-left:1.3rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <h1>Jöfnuhneppi</h1>
+      <p class="tagline">Samlagningaraðferð: margfaldaðu jöfnurnar svo önnur breytan falli út þegar þær eru lagðar saman, finndu hina og settu hana inn. Ný dæmi í hvert skipti — engin tvö eins.</p>
+    </div>
+    <button class="themebtn" id="themebtn" type="button">Ljós / dökk</button>
+  </div>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Hluti">
+      <button type="button" id="mode-learn" aria-pressed="false">Æfingahluti</button>
+      <button type="button" id="mode-drill" aria-pressed="true">Fimihluti</button>
+    </div>
+    <select id="levelsel" aria-label="Þyngdarstig"></select>
+  </div>
+  <p class="modenote" id="modenote"></p>
+
+  <div class="card">
+    <div class="eyebrow" id="lvlname"></div>
+    <p class="prompt" id="prompt"></p>
+    <div class="problem" id="problem" aria-live="polite"></div>
+    <div class="work" id="work" hidden></div>
+
+    <div class="meter">
+      <div class="meterhead">
+        <span class="meterlabel" id="meterlabel">Rétt í röð</span>
+        <span class="meterstat" id="meterstat"></span>
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <div class="answerrow" id="answerrow"></div>
+    <div class="keys" id="keys">
+      <button type="button" data-ins="−" aria-label="Mínus">&minus;</button>
+      <button type="button" data-ins="," aria-label="Komma">,</button>
+      <button type="button" data-ins="/" aria-label="Brotastrik">/</button>
+      <span class="hint" id="keyhint"></span>
+    </div>
+
+    <div class="fb" id="fb" hidden></div>
+    <div class="actions" id="actions"></div>
+  </div>
+
+  <div class="map">
+    <div id="themap">
+      <h2>Þyngdarstig æfingahlutans</h2>
+      <p class="mapnote">Í æfingahlutanum leysirðu hvert dæmi í þremur skrefum með samlagningaraðferð. Fimihlutinn hefur eitt stig: allar tegundir blandaðar, eins og á prófi.</p>
+      <ul class="levels" id="levels"></ul>
+      <div class="tipbox"><strong>Samlagningaraðferðin:</strong>
+        <ol>
+          <li>Veldu breytu sem á að falla út. Margfaldaðu aðra eða báðar jöfnurnar svo stuðlar hennar verði <em>jafn stórir en með gagnstæð formerki</em>, t.d. 6<var>y</var> og −6<var>y</var>. Margfaldaðu <em>hvern einasta lið</em>, líka töluna hægra megin.</li>
+          <li>Leggðu jöfnurnar saman. Þá fellur breytan út og eftir er venjuleg jafna með einni óþekktri stærð.</li>
+          <li>Settu svarið inn í aðra hvora upphaflegu jöfnuna og finndu hina breytuna.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="foot">
+      <span id="footstat"></span>
+      <button class="linky" id="reset" type="button">Hreinsa mína stöðu</button>
+    </div>
+  </div>
+
+  <footer class="sitefoot">
+    <p><span class="who">Gyða</span> stærðfræðikennari við FÁ</p>
+  </footer>
+</div>
+
+<script>
+/* Dæmavél fyrir jöfnuhneppi (samlagningaraðferð) – Lota 6 */
+const Eng = (() => {
+  // ---------- Brot (nákvæmur reikningur) ----------
+  const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; };
+  const lcm = (a, b) => Math.abs(a * b) / gcd(a, b);
+  function F(n, d = 1) { if (d === 0) throw new Error('deilt með 0'); if (d < 0) { n = -n; d = -d; } const g = gcd(n, d); return { n: n / g, d: d / g }; }
+  const toF = v => (typeof v === 'object' ? v : F(v));
+  const add = (a, b) => F(a.n * b.d + b.n * a.d, a.d * b.d);
+  const sub = (a, b) => F(a.n * b.d - b.n * a.d, a.d * b.d);
+  const mul = (a, b) => F(a.n * b.n, a.d * b.d);
+  const div = (a, b) => F(a.n * b.d, a.d * b.n);
+  const isZ = a => a.n === 0;
+  const eq = (a, b) => a.n === b.n && a.d === b.d;
+
+  function fmtNum(f) {
+    f = toF(f);
+    const s = f.n < 0 ? '−' : '';
+    const n = Math.abs(f.n), d = f.d;
+    if (d === 1) return s + n;
+    let dd = d; while (dd % 2 === 0) dd /= 2; while (dd % 5 === 0) dd /= 5;
+    if (dd === 1) {
+      let p = 1, k = 0; while (p % d !== 0) { p *= 10; k++; }
+      let str = String(n * (p / d)).padStart(k + 1, '0');
+      return s + str.slice(0, -k) + ',' + str.slice(-k);
+    }
+    return s + n + '/' + d;
+  }
+
+  // ---------- Svör nemenda ----------
+  function strF(s) {
+    const negS = s[0] === '-'; if (negS) s = s.slice(1);
+    const [i, f = ''] = s.split('.');
+    const n = parseInt((i || '0') + f, 10);
+    return F(negS ? -n : n, 10 ** f.length);
+  }
+  function parseAns(s) {
+    s = String(s).replace(/\s+/g, '').replace(/^[xy]=/i, '').replace(/[−–]/g, '-').replace(/,/g, '.');
+    if (!s) return null;
+    const m = s.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);
+    if (m) { const b = strF(m[2]); if (isZ(b)) return null; return div(strF(m[1]), b); }
+    if (/^-?\d*\.?\d+$/.test(s)) return strF(s);
+    return null;
+  }
+
+  // ---------- Slembirafall ----------
+  const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const nz = (a, b) => { let v; do { v = ri(a, b); } while (v === 0); return v; };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const chance = p => Math.random() < p;
+  const sg = () => pick([-1, 1]);
+
+  // =====================================================================
+  // Hneppi: s.A = [[a1,b1],[a2,b2]], s.C = [c1,c2] (heiltölur), s.x, s.y (brot)
+  //   (1) a1·x + b1·y = c1     (2) a2·x + b2·y = c2
+  // =====================================================================
+  const det = A => A[0][0] * A[1][1] - A[1][0] * A[0][1];
+  function solveSys(A, C) {
+    const D = det(A); if (D === 0) return null;
+    return { x: F(C[0] * A[1][1] - C[1] * A[0][1], D), y: F(A[0][0] * C[1] - A[1][0] * C[0], D) };
+  }
+  function mkInt(A, x0, y0) {
+    return { A, C: [A[0][0] * x0 + A[0][1] * y0, A[1][0] * x0 + A[1][1] * y0], x: F(x0), y: F(y0) };
+  }
+
+  // ---------- Áætlun: hvaða breyta fellur út og með hverju er margfaldað ----------
+  // Alltaf er lagt SAMAN – mínus fer í margföldunartöluna.
+  function planFor(s, vi) {
+    const p = s.A[0][vi], q = s.A[1][vi], L = lcm(p, q);
+    let m1 = L / Math.abs(p), m2 = L / Math.abs(q);
+    if (Math.sign(p) === Math.sign(q)) {
+      if (m1 === 1 && m2 !== 1) m2 = -m2;
+      else if (m2 === 1 && m1 !== 1) m1 = -m1;
+      else m2 = -m2;
+    } else {
+      if (Math.sign(p) * m1 < 0) { /* aldrei: m eru jákvæðar hér */ }
+    }
+    return { vi, m: [m1, m2], cost: Math.abs(m1) + Math.abs(m2), neg: m1 < 0 || m2 < 0 };
+  }
+  function bestPlan(s) {
+    const px = planFor(s, 0), py = planFor(s, 1);
+    if (px.cost !== py.cost) return px.cost < py.cost ? px : py;
+    if (px.neg !== py.neg) return px.neg ? py : px;
+    return py;
+  }
+  function kindOf(p) {
+    const a = Math.abs(p.m[0]), b = Math.abs(p.m[1]);
+    if (a === 1 && b === 1) return p.neg ? 2 : 1;
+    if (a === 1 || b === 1) return 3;
+    return 4;
+  }
+
+  // ---------- Samlagning með gefnum margföldunartölum ----------
+  function elim(s, m) {
+    const rows = [0, 1].map(i => [s.A[i][0] * m[i], s.A[i][1] * m[i], s.C[i] * m[i]]);
+    const sum = [rows[0][0] + rows[1][0], rows[0][1] + rows[1][1], rows[0][2] + rows[1][2]];
+    let vi = -1;
+    if (sum[0] === 0 && sum[1] !== 0) vi = 0;
+    else if (sum[1] === 0 && sum[0] !== 0) vi = 1;
+    const out = { m: m.slice(), rows, sum, vi };
+    if (vi >= 0) { out.ri = 1 - vi; out.R = sum[out.ri]; out.K = sum[2]; out.val = F(out.K, out.R); }
+    return out;
+  }
+
+  // ---------- Framsetning (HTML) ----------
+  const VN = ['x', 'y'];
+  const vh = i => '<var>' + VN[i] + '</var>';
+  const frac = (n, d) => '<span class="frac"><span class="nu">' + n + '</span><span class="de">' + d + '</span></span>';
+  const valH = v => { v = toF(v); return v.d === 1 || fmtNum(v).indexOf('/') < 0 ? fmtNum(v) : (v.n < 0 ? '−' : '') + frac(Math.abs(v.n), v.d); };
+  const absV = v => F(Math.abs(v.n), v.d);
+  const parV = v => (v.n < 0 ? '(' + valH(v) + ')' : valH(v));
+  const cBody = (c, i) => (Math.abs(c) === 1 ? '' : Math.abs(c)) + vh(i);
+
+  // Ein lína: items = [{k:'v',c,i} | {k:'n',v} | {k:'s',c,v}], rhs (brot)
+  function lineH(items, rhs) {
+    items = items.filter(it => !(it.k === 'v' && it.c === 0) && !(it.k === 'n' && isZ(toF(it.v))));
+    let out = items.map((it, j) => {
+      let neg, body;
+      if (it.k === 'v') { neg = it.c < 0; body = cBody(it.c, it.i); }
+      else if (it.k === 'n') { const v = toF(it.v); neg = v.n < 0; body = valH(absV(v)); }
+      else { neg = it.c < 0; body = (Math.abs(it.c) === 1 ? parV(it.v) : Math.abs(it.c) + '·' + parV(it.v)); }
+      return j === 0 ? (neg ? '−' : '') + body : (neg ? ' − ' : ' + ') + body;
+    }).join('');
+    if (!out) out = '0';
+    return out + ' = ' + valH(rhs);
+  }
+
+  // Raðir í talnadálkum
+  function rowH(lab, r, o = {}) {
+    const [a, b, c] = r, S = o.sum ? ' sum' : '', g = o.gone || [];
+    const cell = (cls, html) => '<span class="' + cls + S + '">' + html + '</span>';
+    const xc = a === 0 ? '' : (a < 0 ? '−' : '') + cBody(a, 0);
+    const op = a !== 0 && b !== 0 ? (b < 0 ? '−' : '+') : '';
+    const yc = b === 0 ? '' : (a === 0 && b < 0 ? '−' : '') + cBody(b, 1);
+    return '<span class="lab' + S + '">' + lab + '</span>' +
+      cell('tx' + (g[0] ? ' gone' : ''), xc) + cell('op', op) + cell('ty' + (g[1] ? ' gone' : ''), yc) +
+      cell('eqs', '=') + cell('tc', fmtNum(c));
+  }
+  const sysH = rows => '<div class="sysw"><div class="sys">' + rows.join('') + '</div></div>';
+  const probH = s => sysH([rowH('(1)', [s.A[0][0], s.A[0][1], s.C[0]]), rowH('(2)', [s.A[1][0], s.A[1][1], s.C[1]])]);
+  const mLab = (i, m) => '(' + (i + 1) + ')' + (m === 1 ? '' : ' · ' + fmtNum(m));
+  function elimH(e) {
+    const g = [e.vi === 0, e.vi === 1];
+    return sysH([rowH(mLab(0, e.m[0]), e.rows[0], { gone: g }), rowH(mLab(1, e.m[1]), e.rows[1], { gone: g }), '<span class="rule"></span>', rowH('', e.sum)]);
+  }
+  const oneVarH = (c, i, k) => lineH([{ k: 'v', c, i }], F(k));
+
+  // ---------- Lausnarskref ----------
+  function multText(e) {
+    const vi = e.vi, p = e.rows[0][vi], q = e.rows[1][vi];
+    let t;
+    if (e.m[0] === 1) t = 'Jafna (1) helst óbreytt og margföldum jöfnu (2) með ' + fmtNum(e.m[1]);
+    else if (e.m[1] === 1) t = 'Margföldum jöfnu (1) með ' + fmtNum(e.m[0]) + ' og jafna (2) helst óbreytt';
+    else t = 'Margföldum jöfnu (1) með ' + fmtNum(e.m[0]) + ' og jöfnu (2) með ' + fmtNum(e.m[1]);
+    return t + '. Þá verða ' + vh(vi) + '-liðirnir ' + lineTerm(p, vi) + ' og ' + lineTerm(q, vi) + ' — jafn stórir með gagnstæð formerki. Leggjum jöfnurnar saman og ' + vh(vi) + ' fellur út.';
+  }
+  const lineTerm = (c, i) => (c < 0 ? '−' : '') + cBody(c, i);
+
+  function solveOneSteps(R, K, i) { // R·v = K
+    const st = [];
+    if (R === 1) return st;
+    st.push({ h: R === -1 ? 'Margföldum báðar hliðar með −1.' : 'Deilum í báðar hliðar með ' + fmtNum(R) + '.', eh: lineH([{ k: 'v', c: 1, i }], F(K, R)) });
+    return st;
+  }
+
+  function chooseEq(s, vi) { // jafna til að setja inn í; vi = breytan sem á eftir að finna
+    const a0 = Math.abs(s.A[0][vi]), a1 = Math.abs(s.A[1][vi]);
+    if (a0 === 1) return 0; if (a1 === 1) return 1;
+    return a1 < a0 ? 1 : 0;
+  }
+  function substSteps(s, ri, val, j) { // ri = þekkta breytan með gildið val
+    const vi = 1 - ri;
+    if (j == null) j = chooseEq(s, vi);
+    const a = s.A[j][ri], b = s.A[j][vi], c = s.C[j];
+    const it = (known, other) => (ri === 0 ? [known, other] : [other, known]);
+    const st = [];
+    st.push({ h: 'Setjum ' + vh(ri) + ' = ' + valH(val) + ' inn í jöfnu (' + (j + 1) + ').', eh: lineH(it({ k: 's', c: a, v: val }, { k: 'v', c: b, i: vi }), F(c)) });
+    const P = mul(F(a), val);
+    const trivial = Math.abs(a) === 1 && val.d === 1 && val.n >= 0;
+    if (!trivial) st.push({ h: 'Reiknum margföldunina.', eh: lineH(it({ k: 'n', v: P }, { k: 'v', c: b, i: vi }), F(c)) });
+    const Q = sub(F(c), P);
+    if (!isZ(P)) st.push({ h: P.n > 0 ? 'Drögum ' + valH(P) + ' frá báðum hliðum.' : 'Leggjum ' + valH(absV(P)) + ' við báðar hliðar.', eh: lineH([{ k: 'v', c: b, i: vi }], Q) });
+    if (b !== 1) st.push({ h: b === -1 ? 'Margföldum báðar hliðar með −1.' : 'Deilum í báðar hliðar með ' + fmtNum(b) + '.', eh: lineH([{ k: 'v', c: 1, i: vi }], div(Q, F(b))) });
+    return { j, steps: st, value: div(Q, F(b)) };
+  }
+
+  function checkH(s, x, y) { // prófun í báðum jöfnum
+    return [0, 1].map(i => {
+      const v = add(mul(F(s.A[i][0]), x), mul(F(s.A[i][1]), y));
+      const ok = eq(v, F(s.C[i]));
+      const lhs = lineH([{ k: 's', c: s.A[i][0], v: x }, { k: 's', c: s.A[i][1], v: y }], v);
+      return { i, ok, v, html: '(' + (i + 1) + ') &nbsp;' + lhs + (ok ? ' <span class="ok">✓</span>' : ' <span class="no">≠ ' + fmtNum(s.C[i]) + '</span>') };
+    });
+  }
+
+  // ---------- Gerðir dæma ----------
+  const solI = (lo, hi) => (chance(0.1) ? 0 : nz(lo, hi));
+  const G = {};
+  G[1] = () => { // stuðlar þegar gagnstæðir
+    const v = ri(0, 1), k = pick([1, 1, 1, 2, 3, 4, 5]), s = sg();
+    const u1 = ri(1, 5), u2 = sg() * ri(1, 5); if (u1 + u2 === 0) return null;
+    const A = v === 1 ? [[u1, s * k], [u2, -s * k]] : [[s * k, u1], [-s * k, u2]];
+    return chance(0.5) ? mkInt(A, ri(1, 20), ri(1, 20)) : mkInt(A, solI(-8, 12), solI(-8, 12));
+  };
+  G[2] = () => { // sami stuðull, sama formerki → margfalda aðra með −1
+    const v = ri(0, 1), k = ri(1, 6) * sg();
+    const u1 = nz(-6, 6), u2 = nz(-6, 6); if (u1 === u2) return null;
+    const A = v === 1 ? [[u1, k], [u2, k]] : [[k, u1], [k, u2]];
+    return mkInt(A, solI(-9, 12), solI(-9, 12));
+  };
+  G[3] = () => { // annar stuðullinn margfeldi hins
+    const v = ri(0, 1), p = ri(1, 5) * sg(), m = pick([2, 2, 3, 3, 4]) * sg(), q = p * m;
+    if (Math.abs(q) > 12) return null;
+    const u1 = nz(-9, 9), u2 = nz(-9, 9);
+    let col = [p, q]; if (chance(0.5)) col = [q, p];
+    const A = v === 1 ? [[u1, col[0]], [u2, col[1]]] : [[col[0], u1], [col[1], u2]];
+    return mkInt(A, solI(-8, 9), solI(-8, 9));
+  };
+  G[4] = () => { // margfalda báðar
+    const c = () => ri(2, 9) * sg();
+    const A = [[c(), c()], [c(), c()]];
+    return mkInt(A, solI(-7, 8), solI(-7, 8));
+  };
+  G[5] = () => { // svarið er brot
+    const c = () => (chance(0.25) ? 1 : ri(2, 9)) * sg();
+    const A = [[c(), c()], [c(), c()]], C = [ri(-20, 30), ri(-20, 30)];
+    const sol = solveSys(A, C); if (!sol) return null;
+    return { A, C, x: sol.x, y: sol.y };
+  };
+
+  // ---------- Gæðasía ----------
+  const keyOf = s => JSON.stringify([s.A, s.C]);
+  function good(s, kind) {
+    const A = s.A;
+    if (A.flat().some(a => a === 0 || Math.abs(a) > 12)) return false;
+    if (det(A) === 0) return false;
+    if (isZ(s.x) && isZ(s.y)) return false;
+    if (s.C[0] === 0 && s.C[1] === 0) return false;
+    if (s.C.some(c => Math.abs(c) > (kind === 1 ? 70 : 99))) return false;
+    for (let i = 0; i < 2; i++) if (gcd(gcd(A[i][0], A[i][1]), s.C[i]) > 1 && chance(0.8)) return false; // óstytt jafna
+    // síðari jafnan má ekki vera nánast eins og sú fyrri
+    if (A[0][0] === A[1][0] && A[0][1] === A[1][1]) return false;
+    const p = bestPlan(s);
+    if (kind <= 4 && kindOf(p) !== kind) return false;
+    if (kind === 4 && (p.cost > 13 || Math.max(Math.abs(p.m[0]), Math.abs(p.m[1])) > 9)) return false;
+    if (kind === 5) {
+      if (kindOf(p) < 3 || p.cost > 13) return false;
+      if (s.x.d === 1 && s.y.d === 1) return false;
+      if (s.x.d > 9 || s.y.d > 9) return false;
+      if (Math.abs(s.x.n / s.x.d) > 10 || Math.abs(s.y.n / s.y.d) > 10) return false;
+    }
+    // summuröðin þarf að vera viðráðanleg
+    const e = elim(s, p.m);
+    if (Math.abs(e.R) > 60 || Math.abs(e.K) > 300) return false;
+    return true;
+  }
+  function generate(kind, avoid) {
+    for (let i = 0; i < 50000; i++) {
+      const s = G[kind](); if (!s) continue;
+      if (!good(s, kind)) continue;
+      const k = keyOf(s); if (avoid && k === avoid) continue;
+      s.key = k; s.kind = kind; s.plan = bestPlan(s);
+      return s;
+    }
+    throw new Error('Tókst ekki að búa til dæmi');
+  }
+
+  return { F, eq, isZ, fmtNum, parseAns, pick, add, mul, sub, div, valH, vh, lineH, rowH, sysH, probH, elim, elimH, oneVarH, bestPlan, planFor, kindOf,
+           multText, solveOneSteps, substSteps, checkH, chooseEq, generate, solveSys, good, G };
+})();
+if (typeof module !== 'undefined') module.exports = Eng;
+</script>
+<script>
+"use strict";
+var E=Eng,XV="<var>x</var>",YV="<var>y</var>";
+function exS(a,b){return '<span class="sep">|</span>'}
+var LEVELS=[
+ {nm:"Leggja beint saman",ex:XV+" + "+YV+" = 25"+exS()+XV+" − "+YV+" = 5",k:1},
+ {nm:"Margfalda með −1",ex:"2"+XV+" + 5"+YV+" = 41"+exS()+"2"+XV+" + "+YV+" = 13",k:2},
+ {nm:"Margfalda aðra jöfnuna",ex:"10"+XV+" + 3"+YV+" = 42"+exS()+"5"+XV+" − 4"+YV+" = −1",k:3},
+ {nm:"Margfalda báðar jöfnurnar",ex:"2"+XV+" + 3"+YV+" = 7"+exS()+"3"+XV+" − 2"+YV+" = 4",k:4},
+ {nm:"Svarið er brot",ex:"6"+XV+" + 2"+YV+" = 2"+exS()+"5"+XV+" − 7"+YV+" = 6",k:5},
+ {nm:"Blandað",ex:"3"+XV+" + 7"+YV+" = 26"+exS()+"4"+XV+" + 5"+YV+" = 13",k:0}
+];
+/* Blandað og fimihluti: flest dæmi af erfiðari gerðum eins og á prófi */
+var MIX=[0,1,1,2,2,2,3,3,3,3,4];
+function genLevel(i,avoid){
+  if(LEVELS[i].k===0){var j=E.pick(MIX);var p=E.generate(LEVELS[j].k,avoid);p.lv=j;return p}
+  var q=E.generate(LEVELS[i].k,avoid);q.lv=i;return q;
+}
+var GOAL=10;
+
+/* ---------------- staða nemandans ---------------- */
+var KEY="jofnuhneppi-v1";
+var store={lvl:0,mode:"drill",stats:{}};
+try{
+  var raw=localStorage.getItem(KEY);
+  if(raw){var pp=JSON.parse(raw);if(pp&&typeof pp==="object"){store.lvl=pp.lvl|0;if(pp.stats&&typeof pp.stats==="object")store.stats=pp.stats}}
+}catch(e){}
+function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+function stat(i){
+  if(!store.stats[i])store.stats[i]={best:0,done:false,tries:0,right:0};
+  var s=store.stats[i];
+  ["best","tries","right"].forEach(function(k){if(typeof s[k]!=="number")s[k]=0});
+  return s;
+}
+function curStat(){return stat(mode==="drill"?"drill":lvl)}
+
+/* ---------------- viðmót ---------------- */
+function $(id){return document.getElementById(id)}
+var lvl=Math.min(Math.max(store.lvl|0,0),LEVELS.length-1);
+var mode="drill";   /* síðan opnast alltaf í fimihluta */
+var prob=null,streak=0,shownAt=0,times=[],answered=false,lastKey=null,lastInput=null;
+/* æfingahluti: stage = mult | v1 | v2 | done */
+var stage="mult",ch=null,clean=true,hintN=0,sub2=null;
+
+var sel=$("levelsel");
+LEVELS.forEach(function(L,i){
+  var o=document.createElement("option");
+  o.value=i;o.textContent="Stig "+(i+1)+" · "+L.nm;
+  sel.appendChild(o);
+});
+
+function setMode(m){
+  mode=m;store.mode=m;saveStore();
+  $("mode-learn").setAttribute("aria-pressed",m==="learn"?"true":"false");
+  $("mode-drill").setAttribute("aria-pressed",m==="drill"?"true":"false");
+  $("modenote").textContent = m==="learn"
+    ? "Æfingahluti: þú leysir hvert dæmi í þremur skrefum með samlagningaraðferð. Vísbendingar eru í boði og sama dæmið bíður þar til það er rétt."
+    : "Fimihluti: allar tegundir blandaðar, eins og á prófi. Skrifaðu x og y. "+GOAL+" rétt í röð til að ná tökum á efninu. Eitt rangt svar setur röðina í núll.";
+  $("levelsel").hidden=(m==="drill");
+  $("themap").hidden=(m==="drill");
+  streak=0;times=[];
+  newProblem();
+}
+function setLevel(i){
+  lvl=i;store.lvl=i;saveStore();
+  sel.value=i;streak=0;times=[];
+  newProblem();
+}
+
+function drawMeter(){
+  var st=curStat(),d=$("dots"),i;
+  d.innerHTML="";
+  for(i=0;i<GOAL;i++){
+    var sp=document.createElement("span");
+    sp.className="dot"+(i<Math.min(streak,GOAL)?" on":"");
+    d.appendChild(sp);
+  }
+  if(mode==="drill"){
+    $("meterlabel").textContent="Rétt í röð — "+Math.min(streak,GOAL)+" af "+GOAL;
+    var avg=times.length?(times.reduce(function(a,b){return a+b},0)/times.length/1000):0;
+    $("meterstat").textContent="Best: "+st.best+(times.length>1?" · "+avg.toFixed(1).replace(".",",")+" s á dæmi":"")+(st.done?" · náð":"");
+  }else{
+    $("meterlabel").textContent="Æfing — villulaust í röð "+Math.min(streak,GOAL);
+    $("meterstat").textContent=st.right+" villulaus af "+st.tries+" á þessu stigi";
+  }
+}
+
+function newProblem(){
+  prob=(mode==="drill")?genLevel(5,lastKey):genLevel(lvl,lastKey);
+  lastKey=prob.key;
+  answered=false;stage="mult";ch=null;clean=true;hintN=0;sub2=null;
+  $("lvlname").textContent=(mode==="drill")
+    ? "Fimihluti · blandað, eins og á prófi"
+    : "Stig "+(lvl+1)+" · "+LEVELS[lvl].nm;
+  $("problem").innerHTML=E.probH(prob);
+  $("work").innerHTML="";$("work").hidden=true;
+  $("fb").hidden=true;$("fb").innerHTML="";
+  renderStage();
+  drawMeter();renderLevels();
+  shownAt=Date.now();
+}
+
+/* ---------- innsláttarsvæði eftir stigi ---------- */
+function inp(id,cls,ph,lab){
+  return '<input type="text" id="'+id+'" class="'+cls+'" placeholder="'+ph+'" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="'+lab+'">';
+}
+function renderStage(){
+  var r=$("answerrow"),h="",btn="Athuga",pr;
+  if(mode==="drill"){
+    pr="Leystu jöfnuhneppið. Finndu bæði x og y.";
+    h='<span class="xlab">'+XV+' =</span>'+inp("in1","val","t.d. 3","x")+'<span class="xlab">'+YV+' =</span>'+inp("in2","val","t.d. −2","y");
+    $("keyhint").textContent="Svarið má vera heiltala, tugabrot með kommu eða almennt brot, t.d. 22/7";
+  }else if(stage==="mult"){
+    pr="Skref 1 af 3 · Með hverju á að margfalda hvora jöfnu svo önnur breytan falli út þegar þær eru lagðar saman? Skrifaðu 1 ef jafnan á að haldast óbreytt. Mínustala er leyfð.";
+    h='<span class="xlab">(1) ·</span>'+inp("in1","mul","1","Margfalda jöfnu 1 með")+'<span class="xlab">(2) ·</span>'+inp("in2","mul","1","Margfalda jöfnu 2 með");
+    btn="Leggja saman";
+    $("keyhint").textContent="Margföldunartölurnar eru heiltölur, t.d. 3 eða −2";
+  }else if(stage==="v1"){
+    pr="Skref 2 af 3 · Nú er aðeins "+E.vh(ch.ri).replace(/<[^>]+>/g,"")+" eftir. Leystu jöfnuna sem kom út úr samlagningunni.";
+    h='<span class="xlab">'+E.vh(ch.ri)+' =</span>'+inp("in1","val","t.d. 4",E.vh(ch.ri).replace(/<[^>]+>/g,""));
+    $("keyhint").textContent="Svarið má vera heiltala, tugabrot eða almennt brot";
+  }else if(stage==="v2"){
+    var kn=E.vh(ch.ri).replace(/<[^>]+>/g,""),un=E.vh(ch.vi).replace(/<[^>]+>/g,"");
+    pr="Skref 3 af 3 · Settu "+kn+" = "+E.fmtNum(ch.val)+" inn í aðra hvora upphaflegu jöfnuna og finndu "+un+".";
+    h='<span class="xlab">'+E.vh(ch.vi)+' =</span>'+inp("in1","val","t.d. 4",un);
+  }else{
+    pr="Dæmið er leyst.";
+  }
+  $("prompt").textContent=pr;
+  if(stage!=="done"||mode==="drill"){
+    h+='<button class="btn" id="submit" type="button">'+btn+'</button>';
+    $("keys").hidden=false;
+  }else{$("keys").hidden=true}
+  if(answered&&mode==="drill"){h="";$("keys").hidden=true}
+  r.innerHTML=h;
+  if($("submit"))$("submit").onclick=submit;
+  var i1=$("in1"),i2=$("in2");
+  [i1,i2].forEach(function(el){if(el)el.addEventListener("focus",function(){lastInput=el})});
+  if(i1)i1.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();if(i2&&!i2.value)i2.focus();else submit()}});
+  if(i2)i2.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();submit()}});
+  lastInput=i1;
+  if(i1)i1.focus();
+  renderActions();
+}
+
+function renderActions(){
+  var a=$("actions");a.innerHTML="";
+  function add(txt,cls,fn){
+    var b=document.createElement("button");
+    b.type="button";b.className="btn "+cls;b.textContent=txt;b.onclick=fn;
+    a.appendChild(b);return b;
+  }
+  if(answered){add("Næsta dæmi","",newProblem);return}
+  if(mode==="learn"){
+    add("Vísbending","ghost",hint);
+    add("Sýna lausn","ghost",showSolution);
+  }else{
+    add("Sleppa þessu","ghost",function(){failDrill("<p><strong>Þú slepptir dæminu.</strong></p>")});
+  }
+}
+
+function fbox(cls,html){var f=$("fb");f.className="fb "+cls;f.innerHTML=html;f.hidden=false}
+function workAdd(lab,txt,html){
+  var w=$("work");w.hidden=false;
+  w.insertAdjacentHTML("beforeend",'<div class="wstep"><div class="wlab">'+lab+'</div>'+(txt?'<p class="wtxt">'+txt+'</p>':'')+html+'</div>');
+}
+
+/* ---------- full lausn (samlagningaraðferð) ---------- */
+function workedSteps(){
+  var s=prob,p=s.plan,e=E.elim(s,p.m),h='<p class="lbl">Lausn með samlagningaraðferð</p><ol>';
+  h+='<li>Jöfnuhneppið'+E.probH(s)+'</li>';
+  h+='<li>'+E.multText(e)+E.elimH(e)+'</li>';
+  var one=E.solveOneSteps(e.R,e.K,e.ri);
+  one.forEach(function(st){h+='<li>'+st.h+'<span class="se">'+st.eh+'</span></li>'});
+  var sb=E.substSteps(s,e.ri,e.val);
+  sb.steps.forEach(function(st){h+='<li>'+st.h+'<span class="se">'+st.eh+'</span></li>'});
+  h+=proofHTML(s.x,s.y)+'</ol><p>Svar: <span class="mth"><strong>'+XV+' = '+E.valH(s.x)+', &nbsp;'+YV+' = '+E.valH(s.y)+'</strong></span></p>';
+  return h;
+}
+function proofHTML(x,y){
+  var c=E.checkH(prob,x,y);
+  return '<li class="chk">Prófun: setjum '+XV+' = '+E.valH(x)+' og '+YV+' = '+E.valH(y)+' inn í báðar jöfnurnar'+
+    '<span class="se">'+c[0].html+'</span><span class="se">'+c[1].html+'</span>Báðar jöfnurnar ganga upp.</li>';
+}
+
+/* ---------- vísbendingar í æfingahluta ---------- */
+function hint(){
+  var p=prob.plan,s=prob,h;
+  hintN++;
+  if(stage==="mult"){
+    var vi=p.vi,nm=E.vh(vi);
+    if(hintN===1){
+      h='<p class="lbl">Vísbending 1 af 2</p><p>Skoðaðu stuðlana. Stuðlar '+XV+' eru <span class="mth">'+E.fmtNum(s.A[0][0])+'</span> og <span class="mth">'+E.fmtNum(s.A[1][0])+
+        '</span>, stuðlar '+YV+' eru <span class="mth">'+E.fmtNum(s.A[0][1])+'</span> og <span class="mth">'+E.fmtNum(s.A[1][1])+'</span>.</p>'+
+        '<p>Veldu breytuna sem er auðveldast að láta falla út. Stuðlar hennar þurfa að verða <strong>jafn stórir með gagnstæð formerki</strong>. Hér er auðveldast að láta '+nm+' falla út.</p>';
+    }else{
+      hintN=2;
+      var e=E.elim(s,p.m);
+      h='<p class="lbl">Vísbending 2 af 2</p><p>'+E.multText(e).split(". Leggjum")[0]+'.</p><p>Skrifaðu tölurnar í reitina og ýttu á «Leggja saman».</p>';
+    }
+  }else if(stage==="v1"){
+    hintN=1;
+    h='<p class="lbl">Vísbending</p>';
+    if(ch.R===1)h+='<p>Jafnan segir þér svarið beint.</p>';
+    else h+='<p>'+(ch.R===-1?'Margfaldaðu báðar hliðar með −1.':'Deildu í báðar hliðar með '+E.fmtNum(ch.R)+'.')+'</p><p class="big">'+E.oneVarH(ch.R,ch.ri,ch.K)+'</p>';
+  }else if(stage==="v2"){
+    var sb=E.substSteps(s,ch.ri,ch.val);
+    var n=sb.steps.length;
+    var k=Math.min(hintN,Math.max(n-1,1));hintN=k;
+    h='<p class="lbl">Vísbending '+k+' af '+Math.max(n-1,1)+'</p>';
+    for(var i=0;i<k;i++)h+='<p>'+sb.steps[i].h+'</p><p class="big">'+sb.steps[i].eh+'</p>';
+    h+='<p>Haltu áfram héðan.</p>';
+  }else return;
+  fbox("neutral",h);
+  if(lastInput)lastInput.focus();
+}
+
+function showSolution(){
+  clean=false;
+  finishLearn(false);
+  fbox("neutral",workedSteps());
+}
+
+/* ---------- æfingahluti: skref fyrir skref ---------- */
+function intOf(raw){var v=E.parseAns(raw);if(!v||v.d!==1)return null;return v.n}
+function learnSubmit(){
+  var s=prob;
+  if(stage==="mult"){
+    var r1=$("in1").value.trim(),r2=$("in2").value.trim();
+    var m1=r1===""?null:intOf(r1),m2=r2===""?null:intOf(r2);
+    if(r1===""||r2===""){fbox("bad","<p><strong>Skrifaðu tölu í báða reitina.</strong> Skrifaðu 1 ef jafnan á að haldast óbreytt.</p>");return}
+    if(m1===null||m2===null){fbox("bad","<p><strong>Margföldunartölurnar eiga að vera heiltölur</strong>, t.d. <span class=\"mth\">3</span> eða <span class=\"mth\">−2</span>.</p>");return}
+    if(m1===0||m2===0){clean=false;fbox("bad","<p><strong>Ekki margfalda með 0.</strong> Þá verða allir liðir jöfnunnar 0 og hún hverfur.</p>");return}
+    if(Math.abs(m1)>60||Math.abs(m2)>60){fbox("bad","<p>Þetta eru óþarflega stórar tölur. Reyndu minni tölur.</p>");return}
+    var e=E.elim(s,[m1,m2]);
+    if(e.vi<0){
+      clean=false;
+      var same=null,i;
+      for(i=0;i<2;i++)if(e.rows[0][i]===e.rows[1][i])same=i;
+      var msg;
+      if(same!==null){
+        msg='<p><strong>Ekki alveg.</strong> Nú verða '+E.vh(same)+'-liðirnir jafn stórir en með <em>sama</em> formerki. Þegar lagt er saman fæst <span class="mth">'+E.fmtNum(2*e.rows[0][same])+E.vh(same)+'</span>, ekki 0.</p>'+
+            '<p>Margfaldaðu aðra jöfnuna með <strong>mínustölu</strong> svo formerkin verði gagnstæð.</p>';
+      }else{
+        msg='<p><strong>Ekki alveg.</strong> Með þessum tölum fengist þetta þegar lagt er saman:</p>'+E.elimH(e)+
+            '<p>Báðar breyturnar eru enn með. Stuðlar annarrar breytunnar þurfa að verða jafn stórir með gagnstæð formerki.</p>';
+      }
+      fbox("bad",msg);return;
+    }
+    ch=e;
+    var nm=E.vh(e.vi),note="";
+    var g=Math.abs(gcdI(m1,m2));
+    if(g>1)note=' Þetta virkar — en það hefði dugað að margfalda með '+E.fmtNum(m1/g)+' og '+E.fmtNum(m2/g)+'.';
+    workAdd("Skref 1 · margfalda og leggja saman",'Margfaldað með '+E.fmtNum(m1)+' og '+E.fmtNum(m2)+'. '+nm+' fellur út.',E.elimH(e));
+    fbox("good","<p><strong>Rétt.</strong> "+nm+"-liðirnir eyðast út þegar lagt er saman."+note+"</p>");
+    stage="v1";hintN=0;renderStage();return;
+  }
+  var raw=$("in1").value,v=E.parseAns(raw);
+  if(!v){fbox("bad",'<p><strong>'+(raw.trim()?"Ég skil ekki svarið.":"Skrifaðu svar.")+'</strong> Skrifaðu bara töluna, t.d. <span class="mth">4</span>, <span class="mth">−3</span> eða <span class="mth">22/7</span>.</p>');return}
+  if(stage==="v1"){
+    if(!E.eq(v,ch.val)){
+      clean=false;
+      var lhs=E.mul(E.F(ch.R),v);
+      fbox("bad",'<p><strong>Ekki rétt.</strong> Ef '+E.vh(ch.ri)+' = '+E.valH(v)+' verður vinstri hliðin <span class="mth">'+E.valH(lhs)+'</span> en hún á að vera <span class="mth">'+E.fmtNum(ch.K)+'</span>.</p><p>Reyndu aftur — eða biddu um vísbendingu.</p>');
+      return;
+    }
+    workAdd("Skref 2 · leysa",'',
+      '<div class="line">'+E.oneVarH(ch.R,ch.ri,ch.K)+(ch.R!==1?'<span class="then">⇒</span>'+E.vh(ch.ri)+' = '+E.valH(ch.val):'')+'</div>');
+    fbox("good","<p><strong>Rétt.</strong> "+E.vh(ch.ri)+" = "+E.valH(ch.val)+". Nú vantar "+E.vh(ch.vi)+".</p>");
+    stage="v2";hintN=0;renderStage();return;
+  }
+  if(stage==="v2"){
+    var want=ch.vi===0?s.x:s.y;
+    if(!E.eq(v,want)){
+      clean=false;
+      var x=ch.vi===0?v:ch.val,y=ch.vi===0?ch.val:v;
+      var c=E.checkH(s,x,y),bad=c.filter(function(r){return !r.ok})[0]||c[0];
+      fbox("bad",'<p><strong>Ekki rétt.</strong> Ef '+E.vh(ch.ri)+' = '+E.valH(ch.val)+' og '+E.vh(ch.vi)+' = '+E.valH(v)+' gengur jafna ('+(bad.i+1)+') ekki upp:</p><p class="big">'+bad.html+'</p><p>Reyndu aftur — eða biddu um vísbendingu.</p>');
+      return;
+    }
+    var sb=E.substSteps(s,ch.ri,ch.val);
+    workAdd("Skref 3 · setja inn",'Sett inn í jöfnu ('+(sb.j+1)+').',
+      '<div class="line">'+sb.steps[0].eh+'<span class="then">⇒</span>'+E.vh(ch.vi)+' = '+E.valH(want)+'</div>');
+    finishLearn(true);
+  }
+}
+function gcdI(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=a%b;a=b;b=t}return a}
+
+function finishLearn(solved){
+  var st=curStat();
+  st.tries++;
+  if(solved&&clean){st.right++;streak++}else streak=0;
+  saveStore();
+  stage="done";answered=true;
+  if(solved){
+    fbox("good",'<p><strong>'+(clean?"Rétt — og villulaust.":"Rétt.")+'</strong> <span class="mth">'+XV+' = '+E.valH(prob.x)+', &nbsp;'+YV+' = '+E.valH(prob.y)+'</span></p><ol>'+proofHTML(prob.x,prob.y)+'</ol>');
+  }
+  renderStage();drawMeter();renderLevels();
+}
+
+/* ---------- fimihluti ---------- */
+function drillSubmit(){
+  var r1=$("in1").value,r2=$("in2").value;
+  var x=E.parseAns(r1),y=E.parseAns(r2);
+  if(!x||!y){
+    fbox("bad",'<p><strong>'+((r1.trim()&&r2.trim())?"Ég skil ekki svarið.":"Skrifaðu bæði x og y.")+'</strong></p><p>Skrifaðu bara tölurnar, t.d. <span class="mth">4</span>, <span class="mth">−3</span>, <span class="mth">2,5</span> eða <span class="mth">22/7</span>.</p>');
+    ($("in1").value.trim()?$("in2"):$("in1")).focus();return;
+  }
+  var okx=E.eq(x,prob.x),oky=E.eq(y,prob.y);
+  if(okx&&oky){succeedDrill();return}
+  var c=E.checkH(prob,x,y);
+  var part=okx?'<p><strong>Ekki alveg.</strong> '+XV+' er rétt en '+YV+' ekki.</p>':oky?'<p><strong>Ekki alveg.</strong> '+YV+' er rétt en '+XV+' ekki.</p>':'<p><strong>Ekki rétt.</strong></p>';
+  part+='<p>Með '+XV+' = '+E.valH(x)+' og '+YV+' = '+E.valH(y)+':</p><p class="big">'+c[0].html+'</p><p class="big">'+c[1].html+'</p>';
+  failDrill(part);
+}
+function succeedDrill(){
+  var st=curStat();
+  st.tries++;st.right++;streak++;
+  times.push(Date.now()-shownAt);
+  var extra="";
+  if(streak>st.best)st.best=streak;
+  if(streak>=GOAL&&!st.done){st.done=true;extra="<p><strong>"+GOAL+" rétt í röð — þú hefur náð tökum á efninu.</strong></p>"}
+  else if(streak>=GOAL)extra="<p>"+streak+" rétt í röð.</p>";
+  saveStore();
+  answered=true;
+  fbox("good",'<p><strong>Rétt.</strong> <span class="mth">'+XV+' = '+E.valH(prob.x)+', &nbsp;'+YV+' = '+E.valH(prob.y)+'</span></p>'+extra);
+  renderStage();drawMeter();renderLevels();
+  if($("actions").firstChild)$("actions").firstChild.focus();
+}
+function failDrill(msgHtml){
+  var st=curStat();st.tries++;
+  var broke=streak>0;
+  streak=0;times=[];
+  saveStore();
+  answered=true;
+  fbox("bad",msgHtml+(broke?"<p><strong>Röðin fór í núll.</strong> Byrjaðu upp á nýtt.</p>":"")+workedSteps());
+  renderStage();drawMeter();renderLevels();
+  var lv=prob.lv;
+  var b=document.createElement("button");
+  b.type="button";b.className="btn ghost";b.textContent="Æfa þessa tegund";
+  b.onclick=function(){setMode("learn");if(typeof lv==="number")setLevel(lv)};
+  $("actions").appendChild(b);
+}
+
+function submit(){
+  if(answered){newProblem();return}
+  if(mode==="drill")drillSubmit();else learnSubmit();
+}
+
+function renderLevels(){
+  var ul=$("levels");ul.innerHTML="";
+  LEVELS.forEach(function(L,i){
+    var st=stat(i),li=document.createElement("li"),b=document.createElement("button");
+    b.type="button";b.className="lvl";
+    b.dataset.cur=(i===lvl&&mode==="learn")?"1":"0";
+    b.dataset.done="0";
+    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="txt"><span class="nm">'+L.nm+
+      '</span><br><span class="ex">'+L.ex+'</span></span><span class="st">'+
+      (st.tries?st.right+" villulaus af "+st.tries:"—")+"</span>";
+    b.onclick=function(){if(mode!=="learn")setMode("learn");setLevel(i)};
+    li.appendChild(b);ul.appendChild(li);
+  });
+  var d=stat("drill");
+  $("footstat").textContent=d.done
+    ? "Fimihluti: "+GOAL+" rétt í röð — náð."
+    : "Fimihluti: best "+d.best+" rétt í röð af "+GOAL+".";
+}
+
+/* ---------------- tengingar ---------------- */
+$("mode-learn").onclick=function(){setMode("learn")};
+$("mode-drill").onclick=function(){setMode("drill")};
+sel.onchange=function(){setLevel(+sel.value)};
+Array.prototype.forEach.call(document.querySelectorAll(".keys button"),function(b){
+  b.addEventListener("mousedown",function(e){e.preventDefault()});
+  b.onclick=function(){
+    var inp=lastInput||$("in1");if(!inp)return;
+    var a=(inp.selectionStart==null)?inp.value.length:inp.selectionStart;
+    var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
+    inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
+    inp.focus();
+    try{inp.selectionStart=inp.selectionEnd=a+b.dataset.ins.length}catch(e){}
+  };
+});
+$("reset").onclick=function(){store.stats={};saveStore();streak=0;times=[];drawMeter();renderLevels()};
+$("themebtn").onclick=function(){
+  var r=document.documentElement;
+  var isDark=r.getAttribute("data-theme")==="dark"||
+    (!r.getAttribute("data-theme")&&window.matchMedia&&matchMedia("(prefers-color-scheme:dark)").matches);
+  r.setAttribute("data-theme",isDark?"light":"dark");
+};
+sel.value=lvl;
+setMode(mode);
+</script>
+
+</body>
+</html>
