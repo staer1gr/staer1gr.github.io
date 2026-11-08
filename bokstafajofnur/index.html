@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none !important}
+img{max-width:100%}
+</style>
+<title>Bókstafajöfnur</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one focused problem card on graph-paper ground; streak meter directly above the answer field; level map below. */
+:root{
+  --bg:#eceff3; --grid:#dae0e8; --paper:#ffffff; --paper-2:#f4f7fa;
+  --ink:#131e28; --muted:#58687a; --line:#d7dee6;
+  --accent:#1b5a86; --accent-soft:#e2ecf4;
+  --good:#166b3d; --good-soft:#dff0e6;
+  --bad:#a4331f; --bad-soft:#f8e5e1;
+  --streak:#9c6510;
+  --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --font-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-math:"Newsreader",Georgia,"Times New Roman",serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-body); font-size:16px; line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px; background-position:-1px -1px;
+}
+.wrap{max-width:660px; margin:0 auto; padding-inline:16px; padding-block:22px 48px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px}
+h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.5rem,5vw,2rem); margin:0; letter-spacing:-.01em; text-wrap:balance}
+.tagline{margin:.15rem 0 0; color:var(--muted); font-size:.9rem; max-width:34em}
+.themebtn{font-family:var(--font-body); font-size:.78rem; color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:.35rem .7rem; cursor:pointer}
+.themebtn:hover{color:var(--ink)}
+
+.controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px}
+.seg{display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:3px}
+.seg button{font:inherit; font-size:.86rem; font-weight:600; border:0; background:transparent; color:var(--muted); padding:.38rem .9rem; border-radius:99px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--paper)}
+select{font:inherit; font-size:.86rem; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:99px; padding:.42rem .7rem; max-width:100%}
+.modenote{margin:0 0 14px; font-size:.82rem; color:var(--muted)}
+
+.card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:20px 18px; box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+.prompt{margin:.2rem 0 0; font-size:.92rem; color:var(--muted)}
+.problem{font-family:var(--font-math); font-size:clamp(1.7rem,6.5vw,2.5rem); line-height:1.3; margin:.35rem 0 .1rem; overflow-x:auto; padding-bottom:.15rem}
+.problem .op{color:var(--muted); padding:0 .1em}
+sup{font-size:.62em; line-height:0; vertical-align:.5em}
+var{font-family:var(--font-math); font-style:italic}
+
+.meter{margin-top:16px; padding-top:14px; border-top:1px solid var(--line)}
+.meterhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.meterlabel{font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600}
+.meterstat{font-size:.8rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.dots{display:flex; gap:5px; margin-top:8px}
+.dot{flex:1 1 0; min-width:0; height:9px; border-radius:99px; background:var(--paper-2); border:1px solid var(--line)}
+.dot.on{background:var(--streak); border-color:var(--streak)}
+
+.answerrow{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+input[type=text]{
+  flex:1 1 180px; min-width:0; font-family:var(--font-math); font-size:1.35rem;
+  padding:.5rem .65rem; border:1.5px solid var(--line); border-radius:8px;
+  background:var(--paper-2); color:var(--ink);
+}
+input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+.btn{font:inherit; font-weight:600; font-size:.95rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:var(--paper); cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft); filter:none}
+.btn:focus-visible,.seg button:focus-visible,.themebtn:focus-visible,.lvl:focus-visible,.linky:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.keys{display:flex; gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap}
+.keys button{font-family:var(--font-math); font-size:1rem; width:2.1rem; height:2.1rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer}
+.keys .hint{font-family:var(--font-body); font-size:.78rem; color:var(--muted); margin-left:4px}
+.keys .mth{font-family:var(--font-math)}
+.keys button.pow{width:2.5rem; color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button sup{font-size:.65em; vertical-align:.55em; line-height:0}
+.preview{margin-top:8px; font-size:.82rem; color:var(--muted)}
+.preview .plab{text-transform:uppercase; letter-spacing:.08em; font-weight:600; font-size:.72rem}
+.preview .pv{font-family:var(--font-math); font-size:1.3rem; color:var(--ink)}
+.preview .pv sup{font-size:.62em; vertical-align:.55em; line-height:0}
+
+.fb{margin-top:14px; border-radius:8px; padding:12px 14px; font-size:.94rem; border:1px solid var(--line); background:var(--paper-2)}
+.fb.good{background:var(--good-soft); border-color:var(--good)}
+.fb.bad{background:var(--bad-soft); border-color:var(--bad)}
+.fb.neutral{background:var(--accent-soft); border-color:var(--accent)}
+.fb .mth{font-family:var(--font-math); font-size:1.15em}
+.fb p{margin:.3rem 0}
+.fb ol{margin:.4rem 0 .1rem; padding-left:1.4rem}
+.fb li{font-family:var(--font-math); font-size:1.08rem; margin:.12rem 0}
+.fb .lbl{font-family:var(--font-body); font-size:.76rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; margin-top:0}
+.actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+
+.map{margin-top:32px}
+.map h2{font-family:var(--font-display); font-weight:500; font-size:1.15rem; margin:0 0 .2rem}
+.mapnote{margin:0 0 .7rem; font-size:.82rem; color:var(--muted)}
+.levels{display:grid; gap:8px; margin:0; padding:0; list-style:none}
+.lvl{display:flex; align-items:center; gap:12px; background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:8px; padding:10px 12px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer}
+.lvl:hover{border-color:var(--accent)}
+.lvl[data-cur="1"]{border-left-color:var(--accent)}
+.lvl[data-done="1"]{border-left-color:var(--good)}
+.lvl .n{font-family:var(--font-display); font-size:1.05rem; color:var(--muted); width:1.2em; flex:none; font-variant-numeric:tabular-nums}
+.lvl .txt{flex:1 1 auto; min-width:0}
+.lvl .nm{font-weight:600; font-size:.95rem}
+.lvl .ex{font-family:var(--font-math); font-size:.95rem; color:var(--muted)}
+.lvl .st{flex:none; font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right}
+.lvl[data-done="1"] .st{color:var(--good); font-weight:600}
+.foot{margin-top:22px; font-size:.82rem; color:var(--muted); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center}
+.linky{background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer}
+.sitefoot{margin-top:28px; padding-top:16px; border-top:1px solid var(--line); text-align:center}
+.sitefoot p{margin:0; font-family:var(--font-display); font-size:.95rem; color:var(--muted)}
+.sitefoot .who{color:var(--ink); font-weight:500}
+@media (prefers-reduced-motion:no-preference){.dot{transition:background .18s ease,border-color .18s ease}}
+</style>
+<style>
+.xlab{font-family:var(--font-math); font-size:1.35rem; align-self:center; white-space:nowrap}
+.xlab var{font-size:1.05em}
+.problem{font-size:clamp(1.45rem,5.6vw,2.2rem); line-height:1.25; white-space:nowrap}
+.prompt var,.prompt .mth{font-family:var(--font-math); font-size:1.15em; color:var(--ink)}
+.prompt strong{color:var(--ink); font-weight:600}
+.frac{display:inline-flex; flex-direction:column; align-items:stretch; vertical-align:middle; margin:0 .1em; line-height:1.2; text-align:center}
+.frac>.nu{padding:0 .3em .1em; border-bottom:max(1.5px,.055em) solid currentColor; white-space:nowrap}
+.frac>.de{padding:.1em .3em 0; white-space:nowrap}
+.frac .frac{font-size:.9em}
+.rad{display:inline-flex; align-items:stretch; vertical-align:middle; white-space:nowrap; margin:0 .05em; position:relative}
+.rad{align-items:center}
+.rad>.rs{display:block; width:.62em; flex:none; align-self:stretch; min-height:1.15em}
+.rad>.rs svg{display:block; width:100%; height:100%; overflow:visible}
+.rad>.rs polyline{fill:none; stroke:currentColor; stroke-width:1.5; vector-effect:non-scaling-stroke; stroke-linejoin:round}
+.rad>.rc{border-top:max(1.5px,.055em) solid currentColor; padding:.1em .12em 0 .08em; display:block; align-self:center; line-height:1.3}
+.rad>.ri{position:absolute; left:-.05em; top:.05em; font-size:.5em; line-height:1}
+.rad.tall>.ri{top:.35em}
+.rad.ii{margin-left:.25em}
+.mth sup,.problem sup,.se sup,.big sup,.pv sup,.ex sup{font-size:.62em; line-height:0; vertical-align:.55em}
+.fb .se{display:block; font-family:var(--font-math); font-size:1.12rem; overflow-x:auto; white-space:nowrap; padding:.2rem 0}
+.fb li{font-family:var(--font-body); font-size:.94rem; margin:.45rem 0}
+.fb .chk{list-style:none; margin-left:-1.4rem; padding-top:.4rem; border-top:1px dashed var(--line)}
+.fb .big{font-family:var(--font-math); font-size:1.2rem; overflow-x:auto; white-space:nowrap; padding:.2rem 0}
+.fb .mth{white-space:nowrap}
+.lvl .ex{font-size:1rem}
+.lvl .ex .frac{font-size:.85em}
+.keys button.k{font-family:var(--font-math); font-size:1rem; min-width:2.1rem; height:2.1rem; padding:0 .35rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer}
+.keys button.k.pow{color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button.k.wide{font-family:var(--font-body); font-size:.85rem}
+.keys button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.preview{margin-top:10px; display:flex; align-items:center; gap:.6rem; flex-wrap:wrap}
+.preview .pv{overflow-x:auto; white-space:nowrap; max-width:100%; padding:.15rem 0}
+.tipbox{margin-top:14px; font-size:.86rem; color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 13px}
+.tipbox strong{color:var(--ink); font-weight:600}
+.tipbox p{margin:.25rem 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <h1>Bókstafajöfnur</h1>
+      <p class="tagline">Einangraðu einn bókstaf í formúlu. Farðu eins að og með venjulega jöfnu: gerðu það sama báðum megin og hugsaðu um hina bókstafina eins og tölur. Ný dæmi í hvert skipti.</p>
+    </div>
+    <button class="themebtn" id="themebtn" type="button">Ljós / dökk</button>
+  </div>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Hluti">
+      <button type="button" id="mode-learn" aria-pressed="false">Æfingahluti</button>
+      <button type="button" id="mode-drill" aria-pressed="true">Fimihluti</button>
+    </div>
+    <select id="levelsel" aria-label="Þyngdarstig"></select>
+  </div>
+  <p class="modenote" id="modenote"></p>
+
+  <div class="card">
+    <div class="eyebrow" id="lvlname"></div>
+    <p class="prompt" id="prompt"></p>
+    <div class="problem" id="problem" aria-live="polite"></div>
+
+    <div class="meter">
+      <div class="meterhead">
+        <span class="meterlabel" id="meterlabel">Rétt í röð</span>
+        <span class="meterstat" id="meterstat"></span>
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <div class="answerrow">
+      <span class="xlab" id="tlab"></span>
+      <input type="text" id="answer" placeholder="t.d. (U−2a)/2" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Svar">
+      <button class="btn" id="submit" type="button">Athuga</button>
+    </div>
+    <div class="keys">
+      <button type="button" class="k" data-ins="(" aria-label="Opna sviga">(</button>
+      <button type="button" class="k" data-ins=")" aria-label="Loka sviga">)</button>
+      <button type="button" class="k" data-ins="−" aria-label="Mínus">&minus;</button>
+      <button type="button" class="k" data-ins="·" aria-label="Margföldun">·</button>
+      <button type="button" class="k" data-ins="/" aria-label="Brotastrik">/</button>
+      <button type="button" class="k pow" data-ins="^2" aria-label="Í öðru veldi">&#9633;<sup>2</sup></button>
+      <button type="button" class="k pow" data-ins="^3" aria-label="Í þriðja veldi">&#9633;<sup>3</sup></button>
+      <button type="button" class="k pow" data-ins="√(" aria-label="Kvaðratrót">√</button>
+      <button type="button" class="k pow" data-ins="∛(" aria-label="Þriðja rót"><sup>3</sup>√</button>
+      <button type="button" class="k" data-ins="π" aria-label="Pí">π</button>
+    </div>
+    <div class="keys"><span class="hint">Svigar utan um teljara og nefnara sem eru fleiri en einn liður: <span class="mth">(U−2a)/2</span>. Hástafir og lágstafir eru ekki það sama.</span></div>
+    <div class="preview" id="preview" hidden><span class="plab">Svarið þitt:</span> <span class="pv" id="pv"></span></div>
+
+    <div class="fb" id="fb" hidden></div>
+    <div class="actions" id="actions"></div>
+  </div>
+
+  <div class="map">
+    <div id="themap">
+      <h2>Þyngdarstig æfingahlutans</h2>
+      <p class="mapnote">Fimihlutinn hefur eitt stig: allar tegundir blandaðar, eins og á prófi.</p>
+      <ul class="levels" id="levels"></ul>
+      <div class="tipbox">
+        <p><strong>Aðferðin:</strong> Finndu bókstafinn sem á að einangra og „taktu utan af honum“ í öfugri röð: fyrst það sem er lagt við eða dregið frá, svo það sem margfaldar eða deilir, og síðast veldi (með rót).</p>
+        <p>Ef bókstafurinn kemur <strong>tvisvar</strong> fyrir: losnaðu við brotið, margfaldaðu inn í svigana, safnaðu öllum liðum með bókstafnum öðrum megin og taktu hann út fyrir sviga.</p>
+        <p>Gert er ráð fyrir að allar stærðir séu jákvæðar, svo það má taka rót án ±.</p>
+      </div>
+    </div>
+    <div class="foot">
+      <span id="footstat"></span>
+      <button class="linky" id="reset" type="button">Hreinsa mína stöðu</button>
+    </div>
+  </div>
+
+  <footer class="sitefoot">
+    <p><span class="who">Gyða</span> stærðfræðikennari við FÁ</p>
+  </footer>
+</div>
+
+<script>
+/* Dæmavél fyrir bókstafajöfnur – Lota 6 */
+const Eng = (() => {
+  // =====================================================================
+  // Segðir: þáttari (parser), birting (HTML) og útreikningur
+  // Hnútar: n (tala), s (tákn), add, neg, mul, div, pow, rt (rót, k = 2 eða 3)
+  // =====================================================================
+  function norm(s) {
+    return String(s)
+      .replace(/\s+/g, '')
+      .replace(/[−–—]/g, '-').replace(/[·×∙⋅*]/g, '*').replace(/÷/g, '/').replace(/,/g, '.')
+      .replace(/²/g, '^2').replace(/³/g, '^3').replace(/[\[{]/g, '(').replace(/[\]}]/g, ')')
+      .replace(/pi/g, 'π').replace(/sqrt|rót|rot/g, '√').replace(/cbrt/g, '∛');
+  }
+  function tokenize(src) {
+    const s = norm(src), out = [];
+    let i = 0;
+    while (i < s.length) {
+      const c = s[i];
+      let m;
+      if ((m = s.slice(i).match(/^(sin|cos|tan)(?:\(([A-Za-z])\)|([A-Za-z]))/))) {
+        out.push({ k: 's', v: m[1] + '(' + (m[2] || m[3]) + ')' }); i += m[0].length; continue;
+      }
+      if ((m = s.slice(i).match(/^(\d+\.?\d*|\.\d+)/))) { out.push({ k: 'n', v: parseFloat(m[1]) }); i += m[1].length; continue; }
+      if (/[A-Za-z]/.test(c) || c === 'π') { out.push({ k: 's', v: c }); i++; continue; }
+      if ('+-*/^()√∛='.indexOf(c) >= 0) { out.push({ k: c }); i++; continue; }
+      throw new Error('Óþekkt tákn: ' + c);
+    }
+    return out;
+  }
+  function parse(src) {
+    const t = tokenize(src);
+    let p = 0;
+    const peek = () => t[p], eat = k => { if (!t[p] || t[p].k !== k) throw new Error('Villa í segðinni'); return t[p++]; };
+    const startsPrim = x => x && (x.k === 'n' || x.k === 's' || x.k === '(' || x.k === '√' || x.k === '∛');
+    function expr() {
+      const terms = [term()];
+      while (peek() && (peek().k === '+' || peek().k === '-')) {
+        const op = t[p++].k, x = term();
+        terms.push(op === '-' ? { t: 'neg', a: x } : x);
+      }
+      return terms.length === 1 ? terms[0] : { t: 'add', a: terms };
+    }
+    function term() {
+      let cur = unary();
+      for (;;) {
+        const x = peek();
+        if (x && x.k === '*') { p++; cur = mulApp(cur, unary()); }
+        else if (x && x.k === '/') { p++; cur = { t: 'div', n: cur, d: unary() }; }
+        else if (startsPrim(x)) cur = mulApp(cur, power());
+        else return cur;
+      }
+    }
+    function mulApp(a, b) { return a.t === 'mul' && !a.par ? { t: 'mul', a: a.a.concat([b]) } : { t: 'mul', a: [a, b] }; }
+    function unary() {
+      const x = peek();
+      if (x && x.k === '-') { p++; return { t: 'neg', a: unary() }; }
+      if (x && x.k === '+') { p++; return unary(); }
+      return power();
+    }
+    function power() {
+      const b = root();
+      if (peek() && peek().k === '^') { p++; return { t: 'pow', b, e: unary() }; }
+      return b;
+    }
+    function root() {
+      const x = peek();
+      if (x && (x.k === '√' || x.k === '∛')) { p++; return { t: 'rt', k: x.k === '√' ? 2 : 3, a: power() }; }
+      return prim();
+    }
+    function prim() {
+      const x = peek();
+      if (!x) throw new Error('Segðin endar of snemma');
+      if (x.k === 'n') { p++; return { t: 'n', v: x.v }; }
+      if (x.k === 's') { p++; return { t: 's', v: x.v }; }
+      if (x.k === '(') { p++; const e = expr(); eat(')'); e.par = true; return e; }
+      throw new Error('Villa í segðinni');
+    }
+    const e = expr();
+    if (p < t.length) throw new Error(t[p].k === ')' ? 'Of margir lokasvigar' : 'Villa í segðinni');
+    return e;
+  }
+  function parseEq(s) { const i = s.indexOf('='); return { L: parse(s.slice(0, i)), R: parse(s.slice(i + 1)) }; }
+
+  // ---------- útreikningur ----------
+  function ev(n, V) {
+    switch (n.t) {
+      case 'n': return n.v;
+      case 's': if (n.v === 'π') return Math.PI; if (!(n.v in V)) return NaN; return V[n.v];
+      case 'add': return n.a.reduce((s, x) => s + ev(x, V), 0);
+      case 'neg': return -ev(n.a, V);
+      case 'mul': return n.a.reduce((s, x) => s * ev(x, V), 1);
+      case 'div': { const d = ev(n.d, V); return Math.abs(d) < 1e-12 ? NaN : ev(n.n, V) / d; }
+      case 'pow': return Math.pow(ev(n.b, V), ev(n.e, V));
+      case 'rt': { const a = ev(n.a, V); return n.k === 3 ? Math.cbrt(a) : (a < -1e-12 ? NaN : Math.sqrt(Math.max(a, 0))); }
+    }
+    return NaN;
+  }
+  function syms(n, acc = new Set()) {
+    if (n.t === 's') { if (n.v !== 'π') acc.add(n.v); }
+    else if (n.t === 'add' || n.t === 'mul') n.a.forEach(x => syms(x, acc));
+    else if (n.t === 'neg' || n.t === 'rt') syms(n.a, acc);
+    else if (n.t === 'div') { syms(n.n, acc); syms(n.d, acc); }
+    else if (n.t === 'pow') { syms(n.b, acc); syms(n.e, acc); }
+    return acc;
+  }
+
+  // ---------- birting ----------
+  const fmtN = v => { const r = Math.round(v * 1e6) / 1e6; return (r < 0 ? '−' : '') + String(Math.abs(r)).replace('.', ','); };
+  const frac = (n, d) => '<span class="frac"><span class="nu">' + n + '</span><span class="de">' + d + '</span></span>';
+  const hasFrac = n => n.t === 'div' || ['add', 'mul'].includes(n.t) && n.a.some(hasFrac) || ['neg', 'rt'].includes(n.t) && hasFrac(n.a) || n.t === 'pow' && hasFrac(n.b);
+  function symH(v) {
+    if (v === 'π') return 'π';
+    const m = v.match(/^(sin|cos|tan)\((.)\)$/);
+    if (m) return m[1] + '(<var>' + m[2] + '</var>)';
+    return '<var>' + v + '</var>';
+  }
+  const negLead = n => n.t === 'neg' || (n.t === 'n' && n.v < 0) || (n.t === 'mul' && negLead(n.a[0]));
+  function stripNeg(n) {
+    if (n.t === 'neg') return n.a;
+    if (n.t === 'n') return { t: 'n', v: -n.v };
+    return { t: 'mul', a: [stripNeg(n.a[0])].concat(n.a.slice(1)) };
+  }
+  function H(n) {
+    switch (n.t) {
+      case 'n': return fmtN(n.v);
+      case 's': return symH(n.v);
+      case 'add': return n.a.map((x, i) => {
+        if (i === 0) return H(x);
+        return negLead(x) ? ' − ' + Hw(stripNeg(x), true) : ' + ' + H(x);
+      }).join('');
+      case 'neg': return '−' + Hw(n.a, true);
+      case 'mul': {
+        let out = '', prev = null;
+        n.a.forEach((f, i) => {
+          let kind, h;
+          if (f.t === 'add' || (f.t === 'neg' && i > 0) || (f.t === 'n' && f.v < 0 && i > 0)) { kind = 'par'; h = '(' + H(f) + ')'; }
+          else if (f.t === 'neg') { kind = 'sym'; h = H(f); }
+          else if (f.t === 'n') { kind = 'num'; h = H(f); }
+          else if (f.t === 'div') { kind = 'frac'; h = H(f); }
+          else if (f.t === 'pow' && !['s', 'n'].includes(f.b.t)) { kind = 'par'; h = H(f); }
+          else if (f.t === 'mul') { kind = 'par'; h = '(' + H(f) + ')'; }
+          else { kind = f.t === 'rt' ? 'rad' : 'sym'; h = H(f); }
+          if (prev) {
+            let sep = '·';
+            if (kind === 'par' && prev !== 'frac') sep = '';
+            else if (prev === 'num' && (kind === 'sym' || kind === 'rad')) sep = '';
+            out += sep;
+          }
+          out += h; prev = kind;
+        });
+        return out;
+      }
+      case 'div': return frac(H(n.n), H(n.d));
+      case 'pow': {
+        const b = (n.b.t === 's' || (n.b.t === 'n' && n.b.v >= 0)) ? H(n.b) : '(' + H(n.b) + ')';
+        return b + '<sup>' + H(n.e) + '</sup>';
+      }
+      case 'rt': return '<span class="rad' + (hasFrac(n.a) ? ' tall' : '') + (n.k === 3 ? ' ii' : '') + '">' + (n.k === 3 ? '<span class="ri">3</span>' : '') +
+        '<span class="rs"><svg viewBox="0 0 60 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,62 14,55 32,98 60,0.6"/></svg></span><span class="rc">' + H(n.a) + '</span></span>';
+    }
+    return '?';
+  }
+  function Hw(n, wrapAdd) { return (wrapAdd && n.t === 'add') || n.t === 'neg' ? '(' + H(n) + ')' : H(n); }
+  const exprHTML = s => H(parse(s));
+  const eqHTML = s => { const e = parseEq(s); return H(e.L) + ' = ' + H(e.R); };
+  const m = s => '<span class="mth">' + exprHTML(s) + '</span>';
+
+  // =====================================================================
+  // Slembirafall og bókstafir
+  // =====================================================================
+  const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const chance = p => Math.random() < p;
+  const LO = 'abcdfghkmnpqrstuvwxyz'.split(''), UP = 'ABCDFGHKLMNPRSTUVW'.split('');
+  function letters(nUp, nLo) {
+    const used = new Set(), out = [];
+    const take = pool => { let c; do { c = pick(pool); } while (used.has(c.toLowerCase())); used.add(c.toLowerCase()); out.push(c); };
+    for (let i = 0; i < nUp; i++) take(UP);
+    for (let i = 0; i < nLo; i++) take(LO);
+    return out;
+  }
+  const K = (k, x) => (k === 1 ? x : k + '*' + x);
+  const P = s => (s.length > 1 ? '(' + s + ')' : s);          // svigi utan um samsetta segð
+
+  // ---------- Textar í lausnarskrefum ----------
+  const T = {
+    div: x => 'Deilum í báðar hliðar með ' + m(x) + '.',
+    mul: x => 'Margföldum báðar hliðar með ' + m(x) + '.',
+    sub: x => 'Drögum ' + m(x) + ' frá báðum hliðum.',
+    add: x => 'Leggjum ' + m(x) + ' við báðar hliðar.',
+    sqrt: 'Tökum kvaðratrót af báðum hliðum (allar stærðir eru jákvæðar).',
+    cbrt: 'Tökum þriðju rót af báðum hliðum.',
+    exp: 'Margföldum inn í svigann.',
+    fac: x => 'Tökum ' + m(x) + ' út fyrir sviga.',
+    flip: x => 'Skrifum svarið með ' + m(x) + ' vinstra megin.',
+  };
+
+  // Dæmi: f = formúla, t = bókstafurinn sem á að einangra, dep = bókstafur reiknaður út frá hinum (fwd)
+  function Pr(f, t, dep, fwd, ans, st) {
+    st = st.slice();
+    const goal = t + '=' + ans;
+    if (st[st.length - 1][1].replace(/\s/g, '') !== goal.replace(/\s/g, '')) st.push([T.flip(t), goal]);
+    return { f, t, dep, fwd, ans, st };
+  }
+
+  // =====================================================================
+  // Dæmagerðir eftir þyngdarstigum
+  // =====================================================================
+  const G = [[], [], [], [], [], []];
+
+  // ---------- Stig 1: margföldun og deiling ----------
+  G[0].push(() => { // U = I·R
+    const [X, Y, Z] = chance(0.6) ? pick([['U', 'I', 'R'], ['F', 'm', 'a'], ['s', 'v', 't'], ['P', 'U', 'I'], ['W', 'F', 's']]) : letters(1, 2);
+    const tg = pick([Y, Z]), o = tg === Y ? Z : Y;
+    return Pr(`${X}=${Y}*${Z}`, tg, X, `${Y}*${Z}`, `${X}/${o}`, [[T.div(o), `${X}/${o}=${tg}`]]);
+  });
+  G[0].push(() => { // v = s/t
+    const [X, Y, Z] = chance(0.5) ? pick([['v', 's', 't'], ['I', 'U', 'R'], ['p', 'F', 'A']]) : letters(0, 3);
+    if (chance(0.5)) return Pr(`${X}=${Y}/${Z}`, Y, X, `${Y}/${Z}`, `${X}*${Z}`, [[T.mul(Z), `${X}*${Z}=${Y}`]]);
+    return Pr(`${X}=${Y}/${Z}`, Z, X, `${Y}/${Z}`, `${Y}/${X}`, [[T.mul(Z), `${X}*${Z}=${Y}`], [T.div(X), `${Z}=${Y}/${X}`]]);
+  });
+  G[0].push(() => { // F = g·h/2
+    let X, Y, Z, k, n;
+    if (chance(0.35)) { [X, Y, Z, k, n] = ['F', 'g', 'h', 1, 2]; }
+    else { [X, Y, Z] = letters(1, 2); k = pick([1, 1, 2, 3]); do { n = pick([2, 3, 4, 5, 6]); } while (n === k || (n % k === 0 && k > 1)); }
+    const tg = pick([Y, Z]), o = tg === Y ? Z : Y;
+    const rhs = `${K(k, Y)}*${Z}`;
+    return Pr(`${X}=${rhs}/${n}`, tg, X, `${rhs}/${n}`, `${n}*${X}/${P(K(k, o))}`,
+      [[T.mul(String(n)), `${n}*${X}=${rhs}`], [T.div(K(k, o)), `${n}*${X}/${P(K(k, o))}=${tg}`]]);
+  });
+  G[0].push(() => { // a/p = b/q  og sínusreglan
+    const [A, Pp, B, Q] = chance(0.3) ? ['a', 'sin(A)', 'b', 'sin(B)'] : letters(0, 4);
+    const f = `${A}/${Pp}=${B}/${Q}`, fwd = `${A}*${Q}/${Pp}`;
+    switch (ri(0, 3)) {
+      case 0: return Pr(f, B, B, fwd, `${A}*${Q}/${Pp}`, [[T.mul(Q), `${A}*${Q}/${Pp}=${B}`]]);
+      case 1: return Pr(f, A, B, fwd, `${B}*${Pp}/${Q}`, [[T.mul(Pp), `${A}=${B}*${Pp}/${Q}`]]);
+      case 2: return Pr(f, Q, B, fwd, `${B}*${Pp}/${A}`, [['Margföldum í kross (báðar hliðar með ' + m(Pp) + ' og ' + m(Q) + ').', `${A}*${Q}=${B}*${Pp}`], [T.div(A), `${Q}=${B}*${Pp}/${A}`]]);
+      default: return Pr(f, Pp, B, fwd, `${A}*${Q}/${B}`, [['Margföldum í kross (báðar hliðar með ' + m(Pp) + ' og ' + m(Q) + ').', `${A}*${Q}=${B}*${Pp}`], [T.div(B), `${A}*${Q}/${B}=${Pp}`]]);
+    }
+  });
+
+  // ---------- Stig 2: tvö skref ----------
+  G[1].push(() => { // U = 2a + 2b
+    let X, Y, Z, k, j;
+    if (chance(0.3)) { [X, Y, Z, k, j] = ['U', 'a', 'b', 2, 2]; }
+    else { [X, Y, Z] = letters(1, 2); k = ri(1, 5); j = ri(2, 5); if (chance(0.5)) [k, j] = [j, k]; }
+    const f = `${X}=${K(k, Y)}+${K(j, Z)}`, fwd = `${K(k, Y)}+${K(j, Z)}`;
+    const iso = (tg, c, oth) => {
+      const st = [[T.sub(oth), `${X}-${oth}=${K(c, tg)}`]];
+      let ans = `${X}-${oth}`;
+      if (c !== 1) { ans = `(${X}-${oth})/${c}`; st.push([T.div(String(c)), `${ans}=${tg}`]); }
+      return Pr(f, tg, X, fwd, ans, st);
+    };
+    return chance(0.6) ? iso(Z, j, K(k, Y)) : iso(Y, k, K(j, Z));
+  });
+  G[1].push(() => { // y = kx + m
+    const [y, k, x, mm] = chance(0.5) ? ['y', 'k', 'x', 'm'] : letters(0, 4);
+    const f = `${y}=${k}*${x}+${mm}`, fwd = `${k}*${x}+${mm}`;
+    switch (ri(0, 2)) {
+      case 0: return Pr(f, x, y, fwd, `(${y}-${mm})/${k}`, [[T.sub(mm), `${y}-${mm}=${k}*${x}`], [T.div(k), `(${y}-${mm})/${k}=${x}`]]);
+      case 1: return Pr(f, mm, y, fwd, `${y}-${k}*${x}`, [[T.sub(`${k}*${x}`), `${y}-${k}*${x}=${mm}`]]);
+      default: return Pr(f, k, y, fwd, `(${y}-${mm})/${x}`, [[T.sub(mm), `${y}-${mm}=${k}*${x}`], [T.div(x), `(${y}-${mm})/${x}=${k}`]]);
+    }
+  });
+  G[1].push(() => { // v = (s − t)/2
+    const [v, s, t] = chance(0.4) ? ['v', 's', 't'] : letters(0, 3);
+    const n = pick([2, 2, 3, 4]), minus = chance(0.65);
+    const f = `${v}=(${s}${minus ? '-' : '+'}${t})/${n}`, fwd = `(${s}${minus ? '-' : '+'}${t})/${n}`;
+    const s1 = [T.mul(String(n)), `${n}*${v}=${s}${minus ? '-' : '+'}${t}`];
+    if (minus) {
+      if (chance(0.6)) return Pr(f, t, v, fwd, `${s}-${n}*${v}`, [s1, [T.add(t), `${n}*${v}+${t}=${s}`], [T.sub(`${n}*${v}`), `${t}=${s}-${n}*${v}`]]);
+      return Pr(f, s, v, fwd, `${n}*${v}+${t}`, [s1, [T.add(t), `${n}*${v}+${t}=${s}`]]);
+    }
+    if (chance(0.5)) return Pr(f, t, v, fwd, `${n}*${v}-${s}`, [s1, [T.sub(s), `${n}*${v}-${s}=${t}`]]);
+    return Pr(f, s, v, fwd, `${n}*${v}-${t}`, [s1, [T.sub(t), `${n}*${v}-${t}=${s}`]]);
+  });
+  G[1].push(() => { // X = Y − kZ
+    const u = chance(0.5) ? 1 : 0, [X, Y, Z] = letters(u, 3 - u);
+    const k = pick([1, 2, 3, 4, 5]);
+    const f = `${X}=${Y}-${K(k, Z)}`, fwd = `${Y}-${K(k, Z)}`;
+    if (chance(0.7)) {
+      const st = [[T.add(K(k, Z)), `${X}+${K(k, Z)}=${Y}`], [T.sub(X), `${K(k, Z)}=${Y}-${X}`]];
+      let ans = `${Y}-${X}`;
+      if (k !== 1) { ans = `(${Y}-${X})/${k}`; st.push([T.div(String(k)), `${Z}=${ans}`]); }
+      return Pr(f, Z, X, fwd, ans, st);
+    }
+    return Pr(f, Y, X, fwd, `${X}+${K(k, Z)}`, [[T.add(K(k, Z)), `${X}+${K(k, Z)}=${Y}`]]);
+  });
+
+  // ---------- Stig 3: svigar og brot ----------
+  G[2].push(() => { // F = h(a + b)/2
+    const [F, h, a, b] = chance(0.5) ? ['F', 'h', 'a', 'b'] : letters(1, 3);
+    const f = `${F}=${h}*(${a}+${b})/2`, fwd = `${h}*(${a}+${b})/2`, s1 = [T.mul('2'), `2*${F}=${h}*(${a}+${b})`];
+    switch (ri(0, 2)) {
+      case 0: return Pr(f, a, F, fwd, `2*${F}/${h}-${b}`, [s1, [T.div(h), `2*${F}/${h}=${a}+${b}`], [T.sub(b), `2*${F}/${h}-${b}=${a}`]]);
+      case 1: return Pr(f, b, F, fwd, `2*${F}/${h}-${a}`, [s1, [T.div(h), `2*${F}/${h}=${a}+${b}`], [T.sub(a), `2*${F}/${h}-${a}=${b}`]]);
+      default: return Pr(f, h, F, fwd, `2*${F}/(${a}+${b})`, [s1, [T.div(`(${a}+${b})`), `2*${F}/(${a}+${b})=${h}`]]);
+    }
+  });
+  G[2].push(() => { // C = 5(F − 32)/9
+    let X, Y, k, n, c, minus;
+    if (chance(0.35)) { [X, Y, k, n, c, minus] = ['C', 'F', 5, 9, 32, true]; }
+    else {
+      [X, Y] = letters(chance(0.5) ? 1 : 0, chance(0.5) ? 1 : 2).slice(0, 2);
+      k = ri(2, 7); do { n = ri(2, 9); } while (n === k); c = ri(2, 30); minus = chance(0.6);
+    }
+    const op = minus ? '-' : '+', f = `${X}=${k}*(${Y}${op}${c})/${n}`, fwd = `${k}*(${Y}${op}${c})/${n}`;
+    const ans = `${n}*${X}/${k}${minus ? '+' : '-'}${c}`;
+    return Pr(f, Y, X, fwd, ans, [[T.mul(String(n)), `${n}*${X}=${k}*(${Y}${op}${c})`], [T.div(String(k)), `${n}*${X}/${k}=${Y}${op}${c}`],
+      [minus ? T.add(String(c)) : T.sub(String(c)), `${ans}=${Y}`]]);
+  });
+  G[2].push(() => { // y = k(x − a)
+    const [y, k, x, a] = letters(0, 4);
+    const f = `${y}=${k}*(${x}-${a})`, fwd = `${k}*(${x}-${a})`, s1 = [T.div(k), `${y}/${k}=${x}-${a}`];
+    switch (ri(0, 2)) {
+      case 0: return Pr(f, x, y, fwd, `${y}/${k}+${a}`, [s1, [T.add(a), `${y}/${k}+${a}=${x}`]]);
+      case 1: return Pr(f, a, y, fwd, `${x}-${y}/${k}`, [s1, ['Leggjum ' + m(a) + ' við báðar hliðar og drögum ' + m(`${y}/${k}`) + ' frá báðum hliðum.', `${a}=${x}-${y}/${k}`]]);
+      default: return Pr(f, k, y, fwd, `${y}/(${x}-${a})`, [[T.div(`(${x}-${a})`), `${y}/(${x}-${a})=${k}`]]);
+    }
+  });
+  G[2].push(() => { // x = a/b + c
+    const [x, a, b, c] = letters(0, 4);
+    const f = `${x}=${a}/${b}+${c}`, fwd = `${a}/${b}+${c}`, s1 = [T.sub(c), `${x}-${c}=${a}/${b}`], s2 = [T.mul(b), `${b}*(${x}-${c})=${a}`];
+    if (chance(0.5)) return Pr(f, a, x, fwd, `${b}*(${x}-${c})`, [s1, s2]);
+    return Pr(f, b, x, fwd, `${a}/(${x}-${c})`, [s1, s2, [T.div(`(${x}-${c})`), `${b}=${a}/(${x}-${c})`]]);
+  });
+  G[2].push(() => { // a = (c − d)/(d + e), einangra c
+    const [a, c, d, e] = chance(0.4) ? ['a', 'c', 'd', 'e'] : letters(0, 4);
+    const minus = chance(0.6), op = minus ? '-' : '+';
+    const f = `${a}=(${c}${op}${d})/(${d}+${e})`, fwd = `(${c}${op}${d})/(${d}+${e})`;
+    const ans = `${a}*(${d}+${e})${minus ? '+' : '-'}${d}`;
+    return Pr(f, c, a, fwd, ans, [[T.mul(`(${d}+${e})`), `${a}*(${d}+${e})=${c}${op}${d}`], [minus ? T.add(d) : T.sub(d), `${ans}=${c}`]]);
+  });
+
+  // ---------- Stig 4: veldi og rætur ----------
+  G[3].push(() => { // F = π·r², E = m·c², X = k·Y²
+    switch (ri(0, 3)) {
+      case 0: return Pr('F=π*r^2', 'r', 'F', 'π*r^2', '√(F/π)', [[T.div('π'), 'F/π=r^2'], [T.sqrt, '√(F/π)=r']]);
+      case 1: return chance(0.6)
+        ? Pr('E=m*c^2', 'c', 'E', 'm*c^2', '√(E/m)', [[T.div('m'), 'E/m=c^2'], [T.sqrt, '√(E/m)=c']])
+        : Pr('E=m*c^2', 'm', 'E', 'm*c^2', 'E/c^2', [[T.div('c^2'), 'E/c^2=m']]);
+      case 2: { const [X, Y] = letters(1, 1), k = ri(2, 6);
+        return Pr(`${X}=${k}*${Y}^2`, Y, X, `${k}*${Y}^2`, `√(${X}/${k})`, [[T.div(String(k)), `${X}/${k}=${Y}^2`], [T.sqrt, `√(${X}/${k})=${Y}`]]); }
+      default: { const [X, Y, Z] = letters(1, 2);
+        return Pr(`${X}=${Y}*${Z}^2`, Z, X, `${Y}*${Z}^2`, `√(${X}/${Y})`, [[T.div(Y), `${X}/${Y}=${Z}^2`], [T.sqrt, `√(${X}/${Y})=${Z}`]]); }
+    }
+  });
+  G[3].push(() => { // c² = a² + b²
+    const [a, b, c] = chance(0.6) ? ['a', 'b', 'c'] : letters(0, 3);
+    const f = `${c}^2=${a}^2+${b}^2`, fwd = `√(${a}^2+${b}^2)`;
+    switch (ri(0, 2)) {
+      case 0: return Pr(f, a, c, fwd, `√(${c}^2-${b}^2)`, [[T.sub(`${b}^2`), `${c}^2-${b}^2=${a}^2`], [T.sqrt, `√(${c}^2-${b}^2)=${a}`]]);
+      case 1: return Pr(f, b, c, fwd, `√(${c}^2-${a}^2)`, [[T.sub(`${a}^2`), `${c}^2-${a}^2=${b}^2`], [T.sqrt, `√(${c}^2-${a}^2)=${b}`]]);
+      default: return Pr(f, c, c, fwd, `√(${a}^2+${b}^2)`, [[T.sqrt, `${c}=√(${a}^2+${b}^2)`]]);
+    }
+  });
+  G[3].push(() => { // F = π·r²·x/360
+    const f = 'F=π*r^2*x/360', fwd = 'π*r^2*x/360', s1 = [T.mul('360'), '360*F=π*r^2*x'];
+    if (chance(0.65)) return Pr(f, 'r', 'F', fwd, '√(360*F/(π*x))', [s1, [T.div('π*x'), '360*F/(π*x)=r^2'], [T.sqrt, '√(360*F/(π*x))=r']]);
+    return Pr(f, 'x', 'F', fwd, '360*F/(π*r^2)', [s1, [T.div('π*r^2'), '360*F/(π*r^2)=x']]);
+  });
+  G[3].push(() => { // V = 4πr³/3 og V = πr²h/3
+    if (chance(0.5)) return Pr('V=4*π*r^3/3', 'r', 'V', '4*π*r^3/3', '∛(3*V/(4*π))', [[T.mul('3'), '3*V=4*π*r^3'], [T.div('4*π'), '3*V/(4*π)=r^3'], [T.cbrt, '∛(3*V/(4*π))=r']]);
+    const s1 = [T.mul('3'), '3*V=π*r^2*h'];
+    if (chance(0.6)) return Pr('V=π*r^2*h/3', 'r', 'V', 'π*r^2*h/3', '√(3*V/(π*h))', [s1, [T.div('π*h'), '3*V/(π*h)=r^2'], [T.sqrt, '√(3*V/(π*h))=r']]);
+    return Pr('V=π*r^2*h/3', 'h', 'V', 'π*r^2*h/3', '3*V/(π*r^2)', [s1, [T.div('π*r^2'), '3*V/(π*r^2)=h']]);
+  });
+  G[3].push(() => { // E = m·v²/2 og V = π·r²·h
+    if (chance(0.5)) {
+      const s1 = [T.mul('2'), '2*E=m*v^2'];
+      if (chance(0.65)) return Pr('E=m*v^2/2', 'v', 'E', 'm*v^2/2', '√(2*E/m)', [s1, [T.div('m'), '2*E/m=v^2'], [T.sqrt, '√(2*E/m)=v']]);
+      return Pr('E=m*v^2/2', 'm', 'E', 'm*v^2/2', '2*E/v^2', [s1, [T.div('v^2'), '2*E/v^2=m']]);
+    }
+    if (chance(0.6)) return Pr('V=π*r^2*h', 'r', 'V', 'π*r^2*h', '√(V/(π*h))', [[T.div('π*h'), 'V/(π*h)=r^2'], [T.sqrt, '√(V/(π*h))=r']]);
+    return Pr('V=π*r^2*h', 'h', 'V', 'π*r^2*h', 'V/(π*r^2)', [[T.div('π*r^2'), 'V/(π*r^2)=h']]);
+  });
+
+  // ---------- Stig 5: fleiri liðir ----------
+  G[4].push(() => { // Y = πr² + πrs og S = 2πr² + 2πrh
+    if (chance(0.5)) return Pr('Y=π*r^2+π*r*s', 's', 'Y', 'π*r^2+π*r*s', '(Y-π*r^2)/(π*r)', [[T.sub('π*r^2'), 'Y-π*r^2=π*r*s'], [T.div('π*r'), '(Y-π*r^2)/(π*r)=s']]);
+    return Pr('S=2*π*r^2+2*π*r*h', 'h', 'S', '2*π*r^2+2*π*r*h', '(S-2*π*r^2)/(2*π*r)', [[T.sub('2*π*r^2'), 'S-2*π*r^2=2*π*r*h'], [T.div('2*π*r'), '(S-2*π*r^2)/(2*π*r)=h']]);
+  });
+  G[4].push(() => { // F = πr²x/360 − sh/2
+    const f = 'F=π*r^2*x/360-s*h/2', fwd = 'π*r^2*x/360-s*h/2';
+    const s1 = [T.add('s*h/2'), 'F+s*h/2=π*r^2*x/360'], s2 = [T.mul('360'), '360*(F+s*h/2)=π*r^2*x'];
+    switch (ri(0, 3)) {
+      case 0: case 1: return Pr(f, 'r', 'F', fwd, '√(360*(F+s*h/2)/(π*x))', [s1, s2, [T.div('π*x'), '360*(F+s*h/2)/(π*x)=r^2'], [T.sqrt, '√(360*(F+s*h/2)/(π*x))=r']]);
+      case 2: return Pr(f, 'x', 'F', fwd, '360*(F+s*h/2)/(π*r^2)', [s1, s2, [T.div('π*r^2'), '360*(F+s*h/2)/(π*r^2)=x']]);
+      default: return Pr(f, 'h', 'F', fwd, '2*(π*r^2*x/360-F)/s', [['Leggjum ' + m('s*h/2') + ' við báðar hliðar og drögum ' + m('F') + ' frá báðum hliðum.', 's*h/2=π*r^2*x/360-F'],
+        [T.mul('2'), 's*h=2*(π*r^2*x/360-F)'], [T.div('s'), 'h=2*(π*r^2*x/360-F)/s']]);
+    }
+  });
+  G[4].push(() => { // s = vt + at²/2
+    const f = 's=v*t+a*t^2/2', fwd = 'v*t+a*t^2/2';
+    if (chance(0.6)) return Pr(f, 'a', 's', fwd, '2*(s-v*t)/t^2', [[T.sub('v*t'), 's-v*t=a*t^2/2'], [T.mul('2'), '2*(s-v*t)=a*t^2'], [T.div('t^2'), '2*(s-v*t)/t^2=a']]);
+    return Pr(f, 'v', 's', fwd, '(s-a*t^2/2)/t', [[T.sub('a*t^2/2'), 's-a*t^2/2=v*t'], [T.div('t'), '(s-a*t^2/2)/t=v']]);
+  });
+  G[4].push(() => { // X = kY² + jZ
+    const [X, Y, Z] = letters(1, 2), k = pick([1, 2, 3, 4, 5]), j = ri(2, 6);
+    const f = `${X}=${K(k, Y)}^2+${K(j, Z)}`, fwd = `${K(k, Y)}^2+${K(j, Z)}`;
+    if (chance(0.65)) {
+      const st = [[T.sub(K(j, Z)), `${X}-${K(j, Z)}=${K(k, Y)}^2`]];
+      let inner = `${X}-${K(j, Z)}`;
+      if (k !== 1) { inner = `(${X}-${K(j, Z)})/${k}`; st.push([T.div(String(k)), `${inner}=${Y}^2`]); }
+      st.push([T.sqrt, `√(${inner})=${Y}`]);
+      return Pr(f, Y, X, fwd, `√(${inner})`, st);
+    }
+    return Pr(f, Z, X, fwd, `(${X}-${K(k, Y)}^2)/${j}`, [[T.sub(`${K(k, Y)}^2`), `${X}-${K(k, Y)}^2=${K(j, Z)}`], [T.div(String(j)), `(${X}-${K(k, Y)}^2)/${j}=${Z}`]]);
+  });
+  G[4].push(() => { // y = k(x − a)/n + c   (blandað: svigi, brot og liður)
+    const [y, x, a, c] = letters(0, 4), k = ri(2, 5);
+    const f = `${y}=${k}*(${x}-${a})/${c}`, fwd = `${k}*(${x}-${a})/${c}`;
+    return Pr(f, x, y, fwd, `${c}*${y}/${k}+${a}`, [[T.mul(c), `${c}*${y}=${k}*(${x}-${a})`], [T.div(String(k)), `${c}*${y}/${k}=${x}-${a}`], [T.add(a), `${c}*${y}/${k}+${a}=${x}`]]);
+  });
+
+  // ---------- Stig 6: bókstafurinn kemur tvisvar fyrir ----------
+  G[5].push(() => { // a = (c − d)/(d + e), einangra d
+    const [a, c, d, e] = chance(0.4) ? ['a', 'c', 'd', 'e'] : letters(0, 4);
+    const minus = chance(0.65), op = minus ? '-' : '+';
+    const f = `${a}=(${c}${op}${d})/(${d}+${e})`, fwd = `(${c}${op}${d})/(${d}+${e})`;
+    const st = [[T.mul(`(${d}+${e})`), `${a}*(${d}+${e})=${c}${op}${d}`], [T.exp, `${a}*${d}+${a}*${e}=${c}${op}${d}`]];
+    if (minus) {
+      st.push(['Leggjum ' + m(d) + ' við báðar hliðar og drögum ' + m(`${a}*${e}`) + ' frá — þá eru allir ' + m(d) + '-liðir vinstra megin.', `${a}*${d}+${d}=${c}-${a}*${e}`]);
+      st.push([T.fac(d), `${d}*(${a}+1)=${c}-${a}*${e}`]);
+      st.push([T.div(`(${a}+1)`), `${d}=(${c}-${a}*${e})/(${a}+1)`]);
+      return Pr(f, d, a, fwd, `(${c}-${a}*${e})/(${a}+1)`, st);
+    }
+    st.push(['Drögum ' + m(d) + ' og ' + m(`${a}*${e}`) + ' frá báðum hliðum — þá eru allir ' + m(d) + '-liðir vinstra megin.', `${a}*${d}-${d}=${c}-${a}*${e}`]);
+    st.push([T.fac(d), `${d}*(${a}-1)=${c}-${a}*${e}`]);
+    st.push([T.div(`(${a}-1)`), `${d}=(${c}-${a}*${e})/(${a}-1)`]);
+    return Pr(f, d, a, fwd, `(${c}-${a}*${e})/(${a}-1)`, st);
+  });
+  G[5].push(() => { // RS + T = U(R − T)/V, einangra R
+    const [R, S, Tt, U, V] = chance(0.5) ? ['R', 'S', 'T', 'U', 'V'] : letters(5, 0);
+    const f = `${R}*${S}+${Tt}=${U}*(${R}-${Tt})/${V}`, fwd = `${V}*(${R}*${S}+${Tt})/(${R}-${Tt})`;
+    return Pr(f, R, U, fwd, `(${U}*${Tt}+${Tt}*${V})/(${U}-${S}*${V})`, [
+      [T.mul(V), `${V}*(${R}*${S}+${Tt})=${U}*(${R}-${Tt})`],
+      ['Margföldum inn í svigana báðum megin.', `${R}*${S}*${V}+${Tt}*${V}=${U}*${R}-${U}*${Tt}`],
+      ['Drögum ' + m(`${U}*${R}`) + ' og ' + m(`${Tt}*${V}`) + ' frá báðum hliðum — þá eru allir ' + m(R) + '-liðir vinstra megin.', `${R}*${S}*${V}-${U}*${R}=-${U}*${Tt}-${Tt}*${V}`],
+      [T.fac(R), `${R}*(${S}*${V}-${U})=-${U}*${Tt}-${Tt}*${V}`],
+      [T.div(`(${S}*${V}-${U})`), `${R}=(-${U}*${Tt}-${Tt}*${V})/(${S}*${V}-${U})`],
+      ['Margföldum teljara og nefnara með −1 til að losna við mínusana.', `${R}=(${U}*${Tt}+${Tt}*${V})/(${U}-${S}*${V})`]]);
+  });
+  G[5].push(() => { // x/(2 + xy) = R, einangra x
+    const [R, x, y] = chance(0.4) ? ['R', 'x', 'y'] : letters(1, 2), k = pick([1, 2, 2, 3, 4, 5]);
+    const f = `${x}/(${k}+${x}*${y})=${R}`, fwd = `${x}/(${k}+${x}*${y})`;
+    return Pr(f, x, R, fwd, `${K(k, R)}/(1-${R}*${y})`, [
+      [T.mul(`(${k}+${x}*${y})`), `${x}=${R}*(${k}+${x}*${y})`],
+      [T.exp, `${x}=${K(k, R)}+${R}*${x}*${y}`],
+      [T.sub(`${R}*${x}*${y}`), `${x}-${R}*${x}*${y}=${K(k, R)}`],
+      [T.fac(x), `${x}*(1-${R}*${y})=${K(k, R)}`],
+      [T.div(`(1-${R}*${y})`), `${x}=${K(k, R)}/(1-${R}*${y})`]]);
+  });
+  G[5].push(() => { // ax + b = cx + d
+    const [a, b, c, d, x] = letters(0, 5);
+    const f = `${a}*${x}+${b}=${c}*${x}+${d}`, fwd = `${a}*${x}+${b}-${c}*${x}`;
+    return Pr(f, x, d, fwd, `(${d}-${b})/(${a}-${c})`, [
+      ['Drögum ' + m(`${c}*${x}`) + ' og ' + m(b) + ' frá báðum hliðum.', `${a}*${x}-${c}*${x}=${d}-${b}`],
+      [T.fac(x), `${x}*(${a}-${c})=${d}-${b}`],
+      [T.div(`(${a}-${c})`), `${x}=(${d}-${b})/(${a}-${c})`]]);
+  });
+  G[5].push(() => { // y = (x + a)/(x − b)
+    const [y, x, a, b] = letters(0, 4);
+    const f = `${y}=(${x}+${a})/(${x}-${b})`, fwd = `(${x}+${a})/(${x}-${b})`;
+    return Pr(f, x, y, fwd, `(${a}+${b}*${y})/(${y}-1)`, [
+      [T.mul(`(${x}-${b})`), `${y}*(${x}-${b})=${x}+${a}`],
+      [T.exp, `${x}*${y}-${b}*${y}=${x}+${a}`],
+      ['Drögum ' + m(x) + ' frá og leggjum ' + m(`${b}*${y}`) + ' við báðar hliðar.', `${x}*${y}-${x}=${a}+${b}*${y}`],
+      [T.fac(x), `${x}*(${y}-1)=${a}+${b}*${y}`],
+      [T.div(`(${y}-1)`), `${x}=(${a}+${b}*${y})/(${y}-1)`]]);
+  });
+  G[5].push(() => { // 1/f = 1/a + 1/b
+    const [f0, a, b] = chance(0.5) ? ['f', 'a', 'b'] : letters(0, 3);
+    const [A, B] = chance(0.5) ? [a, b] : [b, a];
+    return Pr(`1/${f0}=1/${a}+1/${b}`, A, f0, `${a}*${b}/(${a}+${b})`, `${f0}*${B}/(${B}-${f0})`, [
+      [T.sub(`1/${B}`), `1/${f0}-1/${B}=1/${A}`],
+      ['Setjum vinstri hliðina á samnefnarann ' + m(`${f0}*${B}`) + '.', `(${B}-${f0})/(${f0}*${B})=1/${A}`],
+      ['Snúum báðum brotunum við (ef tvö brot eru jöfn eru umhverfur þeirra líka jafnar).', `${f0}*${B}/(${B}-${f0})=${A}`]]);
+  });
+
+  // =====================================================================
+  // Prófunargildi: slembin jákvæð gildi sem passa við formúluna
+  // =====================================================================
+  function samplePoint(p, intMode) {
+    const vars = [...syms(parseEq(p.f).L), ...syms(parseEq(p.f).R)].filter((v, i, A) => A.indexOf(v) === i);
+    const fw = parse(p.fwd), eq = parseEq(p.f), an = parse(p.ans);
+    for (let it = 0; it < 400; it++) {
+      const V = {}, used = new Set();
+      let ok = true;
+      for (const v of vars) {
+        if (v === p.dep) continue;
+        if (intMode) { let k, g = 0; do { k = ri(2, 9); g++; } while (used.has(k) && g < 30); used.add(k); V[v] = k; }
+        else V[v] = 1.3 + Math.random() * 5;
+        if (/^sin/.test(v)) V[v] = intMode ? pick([0.2, 0.25, 0.4, 0.5, 0.6, 0.75, 0.8]) : 0.1 + Math.random() * 0.85;
+      }
+      V[p.dep] = ev(fw, V);
+      const dv = V[p.dep];
+      if (!isFinite(dv) || Math.abs(dv) > 5000 || Math.abs(dv) < 1e-3) ok = false;
+      if (ok && /^sin/.test(p.dep) && (dv <= 0 || dv >= 1)) ok = false;
+      if (ok) {
+        const l = ev(eq.L, V), r = ev(eq.R, V), a = ev(an, V), tv = V[p.t];
+        if (!close(l, r) || !close(a, tv)) ok = false;
+        if (intMode && ok && (dv <= 0 || !nice(dv)) && it < 350) ok = false;
+      }
+      if (ok) return V;
+    }
+    return null;
+  }
+  const close = (a, b) => isFinite(a) && isFinite(b) && Math.abs(a - b) <= 1e-7 * Math.max(1, Math.abs(a), Math.abs(b));
+  const nice = v => Math.abs(v * 10 - Math.round(v * 10)) < 1e-9 && Math.abs(v) <= 999;
+  const showNum = v => (nice(v) ? fmtN(v) : '≈ ' + fmtN(Math.round(v * 100) / 100));
+
+  // =====================================================================
+  // Mat á svari nemanda
+  // =====================================================================
+  function checkAns(raw, p) {
+    let s = norm(raw);
+    if (!s) return { st: 'empty' };
+    const tn = norm(p.t);
+    if (s.startsWith(tn + '=')) s = s.slice(tn.length + 1);
+    if (s.indexOf('=') >= 0) return { st: 'error', msg: 'Skrifaðu bara það sem kemur hægra megin við ' + m(p.t) + ' =' };
+    let a;
+    try { a = parse(s); } catch (e) { return { st: 'error', msg: e.message }; }
+    const fs = new Set([...syms(parseEq(p.f).L), ...syms(parseEq(p.f).R)]);
+    const as = syms(a);
+    if (as.has(p.t)) return { st: 'hasT' };
+    for (const v of as) {
+      if (!fs.has(v)) {
+        const sw = v === v.toUpperCase() ? v.toLowerCase() : v.toUpperCase();
+        return { st: 'unknown', v, sw: fs.has(sw) ? sw : null };
+      }
+    }
+    for (const V of p.samples) if (!close(ev(a, V), V[p.t])) return { st: 'wrong', node: a };
+    return { st: 'ok', node: a };
+  }
+
+  // =====================================================================
+  // Smíði dæmis
+  // =====================================================================
+  function build(lv, avoid) {
+    for (let k = 0; k < 200; k++) {
+      const p = pick(G[lv])();
+      p.key = p.f + '|' + p.t;
+      if (avoid && p.key === avoid) continue;
+      const samples = [];
+      for (let i = 0; i < 6; i++) { const V = samplePoint(p, false); if (V) samples.push(V); }
+      if (samples.length < 6) continue;
+      const cp = samplePoint(p, true); if (!cp) continue;
+      p.samples = samples; p.cp = cp; p.lv = lv;
+      p.steps = p.st.map(([h, e]) => ({ h, e, eh: eqHTML(e) }));
+      return p;
+    }
+    throw new Error('Tókst ekki að búa til dæmi');
+  }
+  function isSolvedEq(s, t) {
+    const e = parseEq(s);
+    const one = n => n.t === 's' && n.v === t;
+    return (one(e.L) && !syms(e.R).has(t)) || (one(e.R) && !syms(e.L).has(t));
+  }
+
+  return { parse, parseEq, ev, syms, H, exprHTML, eqHTML, m, symH, G, build, checkAns, samplePoint, close, showNum, isSolvedEq, pick, norm };
+})();
+if (typeof module !== 'undefined') module.exports = Eng;
+</script>
+<script>
+"use strict";
+var E=Eng;
+
+var LEVELS=[
+ {nm:"Margföldun og deiling",ex:E.eqHTML("U=I*R")+" &nbsp;·&nbsp; "+E.eqHTML("F=g*h/2")+" &nbsp;·&nbsp; "+E.eqHTML("a/p=b/q")},
+ {nm:"Tvö skref",ex:E.eqHTML("U=2*a+2*b")+" &nbsp;·&nbsp; "+E.eqHTML("v=(s-t)/2")},
+ {nm:"Svigar og brot",ex:E.eqHTML("F=h*(a+b)/2")+" &nbsp;·&nbsp; "+E.eqHTML("a=(c-d)/(d+e)")},
+ {nm:"Veldi og rætur",ex:E.eqHTML("F=π*r^2")+" &nbsp;·&nbsp; "+E.eqHTML("c^2=a^2+b^2")+" &nbsp;·&nbsp; "+E.eqHTML("V=4*π*r^3/3")},
+ {nm:"Fleiri liðir",ex:E.eqHTML("Y=π*r^2+π*r*s")+" &nbsp;·&nbsp; "+E.eqHTML("F=π*r^2*x/360-s*h/2")},
+ {nm:"Bókstafurinn kemur tvisvar fyrir",ex:E.eqHTML("x/(2+x*y)=R")+" &nbsp;·&nbsp; "+E.eqHTML("R*S+T=U*(R-T)/V")},
+ {nm:"Blandað",ex:"Allar tegundir"}
+];
+/* Blandað og fimihluti: allar tegundir, flest dæmi af erfiðari gerðum eins og á prófi */
+var MIX=[0,0,1,1,2,2,3,3,3,4,4,5,5];
+function pickMix(){return E.pick(MIX)}
+function gen(i,avoid){if(i===6)i=pickMix();return E.build(i,avoid)}
+var GOAL=10;
+
+/* ---------------- staða nemandans ---------------- */
+var KEY="bokstafajofnur-v1";
+var store={lvl:0,mode:"drill",stats:{}};
+try{
+  var raw=localStorage.getItem(KEY);
+  if(raw){var p0=JSON.parse(raw);if(p0&&typeof p0==="object"){store.lvl=p0.lvl|0;if(p0.mode)store.mode=p0.mode;if(p0.stats&&typeof p0.stats==="object")store.stats=p0.stats}}
+}catch(e){}
+function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+function stat(i){
+  if(!store.stats[i])store.stats[i]={best:0,done:false,tries:0,right:0};
+  var s=store.stats[i];
+  if(typeof s.best!=="number")s.best=0;
+  if(typeof s.tries!=="number")s.tries=0;
+  if(typeof s.right!=="number")s.right=0;
+  return s;
+}
+function curStat(){return stat(mode==="drill"?"drill":lvl)}
+
+/* ---------------- viðmót ---------------- */
+function $(id){return document.getElementById(id)}
+var lvl=Math.min(Math.max(store.lvl|0,0),LEVELS.length-1);
+var mode="drill";   /* síðan opnast alltaf í fimihluta */
+var prob=null,steps=[],streak=0,hintStep=0,shownAt=0,times=[],answered=false,lastKey=null;
+
+var sel=$("levelsel");
+LEVELS.forEach(function(L,i){
+  var o=document.createElement("option");
+  o.value=i;o.textContent="Stig "+(i+1)+" · "+L.nm;
+  sel.appendChild(o);
+});
+
+function setMode(m){
+  mode=m;store.mode=m;saveStore();
+  $("mode-learn").setAttribute("aria-pressed",m==="learn"?"true":"false");
+  $("mode-drill").setAttribute("aria-pressed",m==="drill"?"true":"false");
+  $("modenote").textContent = m==="learn"
+    ? "Æfingahluti: veldu þyngdarstig og fáðu vísbendingar skref fyrir skref. Engin pressa — sama dæmið bíður þar til það er rétt."
+    : "Fimihluti: allar tegundir blandaðar, eins og á prófi. "+GOAL+" rétt í röð til að ná tökum á efninu. Eitt rangt svar setur röðina í núll.";
+  $("levelsel").hidden=(m==="drill");
+  $("themap").hidden=(m==="drill");
+  streak=0;times=[];
+  newProblem();
+}
+function setLevel(i){
+  lvl=i;store.lvl=i;saveStore();
+  sel.value=i;streak=0;times=[];
+  newProblem();
+}
+
+function drawMeter(){
+  var st=curStat(),d=$("dots"),i;
+  d.innerHTML="";
+  for(i=0;i<GOAL;i++){
+    var sp=document.createElement("span");
+    sp.className="dot"+(i<Math.min(streak,GOAL)?" on":"");
+    d.appendChild(sp);
+  }
+  if(mode==="drill"){
+    $("meterlabel").textContent="Rétt í röð — "+Math.min(streak,GOAL)+" af "+GOAL;
+    var avg=times.length?(times.reduce(function(a,b){return a+b},0)/times.length/1000):0;
+    $("meterstat").textContent="Best: "+st.best+(times.length>1?" · "+avg.toFixed(1).replace(".",",")+" s á dæmi":"")+(st.done?" · náð":"");
+  }else{
+    $("meterlabel").textContent="Æfing — rétt í röð "+Math.min(streak,GOAL);
+    $("meterstat").textContent=st.right+" rétt af "+st.tries+" á þessu stigi";
+  }
+}
+
+function newProblem(){
+  prob=gen(mode==="drill"?6:lvl,lastKey);
+  lastKey=prob.key;
+  steps=prob.steps;
+  hintStep=0;answered=false;
+  $("lvlname").textContent=(mode==="drill")
+    ? "Fimihluti · blandað, eins og á prófi"
+    : "Stig "+(lvl+1)+" · "+LEVELS[lvl].nm;
+  $("prompt").innerHTML="Einangraðu "+E.m(prob.t)+".";
+  $("problem").innerHTML=E.eqHTML(prob.f);
+  $("tlab").innerHTML=E.exprHTML(prob.t)+" =";
+  $("answer").value="";$("preview").hidden=true;
+  $("fb").hidden=true;$("fb").innerHTML="";
+  drawMeter();renderActions();renderLevels();
+  shownAt=Date.now();
+  $("answer").focus();
+}
+
+function renderActions(){
+  var a=$("actions");a.innerHTML="";
+  function add(txt,cls,fn){
+    var b=document.createElement("button");
+    b.type="button";b.className="btn "+cls;b.textContent=txt;b.onclick=fn;
+    a.appendChild(b);return b;
+  }
+  if(answered){add("Næsta dæmi","",newProblem);return}
+  if(mode==="learn"){
+    add("Vísbending","ghost",hint);
+    add("Sýna lausn","ghost",function(){fbox("neutral",workedSteps());answered=true;renderActions()});
+  }else{
+    add("Sleppa þessu","ghost",function(){fail("<p><strong>Þú slepptir dæminu.</strong></p>")});
+  }
+}
+
+function fbox(cls,html){var f=$("fb");f.className="fb "+cls;f.innerHTML=html;f.hidden=false}
+
+function hintCount(){
+  for(var i=0;i<steps.length;i++)if(E.isSolvedEq(steps[i].e,prob.t))return i+1;
+  return steps.length;
+}
+
+/* Prófun með tölum: allir bókstafir nema sá einangraði fá gildi */
+function givenText(){
+  var cp=prob.cp,parts=[];
+  Object.keys(cp).forEach(function(v){if(v!==prob.t)parts.push(E.m(v)+" = "+E.showNum(cp[v]))});
+  if(parts.length>1)return parts.slice(0,-1).join(", ")+" og "+parts[parts.length-1];
+  return parts[0];
+}
+function proofHTML(){
+  var eq=E.parseEq(prob.f),cp=prob.cp;
+  return '<li class="chk">Prófun með tölum: ef '+givenText()+' á '+E.m(prob.t)+' að vera '+E.showNum(cp[prob.t])+
+    '. Þá verður vinstri hlið formúlunnar '+E.showNum(E.ev(eq.L,cp))+' og hægri hliðin '+E.showNum(E.ev(eq.R,cp))+' — jafnar.</li>';
+}
+function workedSteps(){
+  var h='<p class="lbl">Lausn</p><ol><li>Formúlan — einangra á '+E.m(prob.t)+'<span class="se">'+E.eqHTML(prob.f)+'</span></li>';
+  for(var i=0;i<steps.length;i++){
+    h+='<li>'+steps[i].h+'<span class="se">'+steps[i].eh+'</span></li>';
+  }
+  h+=proofHTML()+'</ol><p>Svar: <span class="mth"><strong>'+E.eqHTML(prob.t+"="+prob.ans)+'</strong></span></p>';
+  return h;
+}
+
+function hint(){
+  var n=hintCount();
+  hintStep=Math.min(hintStep+1,n);
+  var s=steps[hintStep-1];
+  var last=(hintStep===n);
+  var h='<p class="lbl">Vísbending '+hintStep+' af '+n+'</p><p>'+s.h+'</p>';
+  if(!last)h+='<p class="big">'+s.eh+'</p><p>Haltu áfram héðan — eða biddu um næstu vísbendingu.</p>';
+  else h+='<p>Gerðu þetta síðasta skref sjálf/ur og skrifaðu svarið.</p>';
+  fbox("neutral",h);
+  $("answer").focus();
+}
+
+function succeed(node){
+  var st=curStat();
+  st.tries++;st.right++;streak++;
+  times.push(Date.now()-shownAt);
+  var extra="";
+  if(mode==="drill"){
+    if(streak>st.best)st.best=streak;
+    if(streak>=GOAL&&!st.done){
+      st.done=true;
+      extra="<p><strong>"+GOAL+" rétt í röð — þú hefur náð tökum á efninu.</strong></p>";
+    }else if(streak>=GOAL){
+      extra="<p>"+streak+" rétt í röð.</p>";
+    }
+  }
+  saveStore();
+  answered=true;
+  var mine=E.H(node),std=E.exprHTML(prob.ans);
+  var alt=(mine.replace(/\s/g,"")!==std.replace(/\s/g,""))?'<p>Svarið þitt er rétt. Það má líka skrifa svona: <span class="mth">'+E.eqHTML(prob.t+"="+prob.ans)+'</span></p>':"";
+  fbox("good",'<p><strong>Rétt.</strong> <span class="mth">'+E.exprHTML(prob.t)+' = '+mine+'</span></p>'+alt+
+    '<p>Prófun: ef '+givenText()+' gefur svarið '+E.m(prob.t)+' = '+E.showNum(prob.cp[prob.t])+'.</p>'+extra);
+  drawMeter();renderActions();renderLevels();
+}
+
+function fail(msgHtml){
+  var st=curStat();st.tries++;
+  var broke=(mode==="drill"&&streak>0);
+  if(mode==="drill"){streak=0;times=[]}
+  saveStore();
+  answered=(mode==="drill");
+  fbox("bad",msgHtml+
+    (broke?"<p><strong>Röðin fór í núll.</strong> Byrjaðu upp á nýtt.</p>":"")+
+    (mode==="drill"?workedSteps():"<p>Reyndu aftur — eða biddu um vísbendingu.</p>"));
+  drawMeter();renderActions();renderLevels();
+  if(mode==="drill"){
+    var lv=prob.lv;
+    var b=document.createElement("button");
+    b.type="button";b.className="btn ghost";b.textContent="Æfa þessa tegund";
+    b.onclick=function(){setMode("learn");if(typeof lv==="number")setLevel(lv)};
+    $("actions").appendChild(b);
+  }
+}
+
+function softMsg(html){fbox("bad",html);$("answer").focus()}
+
+function submit(){
+  if(answered){newProblem();return}
+  var raw=$("answer").value;
+  var r=E.checkAns(raw,prob);
+  var T=E.m(prob.t);
+  if(r.st==="empty"){softMsg("<p><strong>Skrifaðu svar.</strong></p>");return}
+  if(r.st==="error"){softMsg('<p><strong>Ég skil ekki svarið.</strong> '+r.msg+'</p><p>Dæmi um rithátt: <span class="mth">(U−2a)/2</span>, <span class="mth">√(F/π)</span>, <span class="mth">2F/h − b</span>.</p>');return}
+  if(r.st==="hasT"){softMsg('<p><strong>Svarið má ekki innihalda '+T+'.</strong> '+T+' á að standa einn öðrum megin og hinir bókstafirnir hinum megin.</p>');return}
+  if(r.st==="unknown"){
+    softMsg(r.sw
+      ? '<p><strong>Athugaðu hástafi og lágstafi.</strong> '+E.m(r.v)+' kemur ekki fyrir í formúlunni, en '+E.m(r.sw)+' gerir það. Þetta eru ekki sami bókstafurinn.</p>'
+      : '<p><strong>'+E.m(r.v)+' kemur ekki fyrir í formúlunni.</strong> Notaðu bara bókstafina sem eru í henni.</p>');
+    return;
+  }
+  if(r.st==="ok"){succeed(r.node);return}
+  var mine=E.ev(r.node,prob.cp);
+  fail('<p><strong>Ekki rétt.</strong> Prófum með tölum: ef '+givenText()+' á '+T+' að vera '+E.showNum(prob.cp[prob.t])+
+    (isFinite(mine)?', en svarið þitt gefur '+E.showNum(mine)+'.':', en svarið þitt gengur ekki upp (deilt með núlli eða rót af neikvæðri tölu).')+'</p>');
+  if(mode==="learn")$("answer").focus();
+}
+
+function renderLevels(){
+  var ul=$("levels");ul.innerHTML="";
+  LEVELS.forEach(function(L,i){
+    var st=stat(i),li=document.createElement("li"),b=document.createElement("button");
+    b.type="button";b.className="lvl";
+    b.dataset.cur=(i===lvl&&mode==="learn")?"1":"0";
+    b.dataset.done="0";
+    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="txt"><span class="nm">'+L.nm+
+      '</span><br><span class="ex">'+L.ex+'</span></span><span class="st">'+
+      (st.tries?st.right+" rétt af "+st.tries:"—")+"</span>";
+    b.onclick=function(){if(mode!=="learn")setMode("learn");setLevel(i)};
+    li.appendChild(b);ul.appendChild(li);
+  });
+  var d=stat("drill");
+  $("footstat").textContent=d.done
+    ? "Fimihluti: "+GOAL+" rétt í röð — náð."
+    : "Fimihluti: best "+d.best+" rétt í röð af "+GOAL+".";
+}
+
+/* ---------------- forskoðun svars ---------------- */
+function updatePreview(){
+  var v=$("answer").value;
+  if(!/[\/^²³√∛π]|sqrt|pi/.test(v)){$("preview").hidden=true;return}
+  var s=E.norm(v),tn=E.norm(prob.t);
+  if(s.indexOf(tn+"=")===0)s=s.slice(tn.length+1);
+  try{$("pv").innerHTML=E.H(E.parse(s));$("preview").hidden=false}catch(e){$("preview").hidden=true}
+}
+
+/* ---------------- tengingar ---------------- */
+$("submit").onclick=submit;
+$("answer").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();submit()}});
+$("answer").addEventListener("input",updatePreview);
+$("mode-learn").onclick=function(){setMode("learn")};
+$("mode-drill").onclick=function(){setMode("drill")};
+sel.onchange=function(){setLevel(+sel.value)};
+Array.prototype.forEach.call(document.querySelectorAll(".keys button.k"),function(b){
+  b.addEventListener("mousedown",function(e){e.preventDefault()});
+  b.onclick=function(){
+    var inp=$("answer");
+    var a=(inp.selectionStart==null)?inp.value.length:inp.selectionStart;
+    var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
+    inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
+    inp.focus();
+    try{inp.selectionStart=inp.selectionEnd=a+b.dataset.ins.length}catch(e){}
+    updatePreview();
+  };
+});
+$("reset").onclick=function(){store.stats={};saveStore();streak=0;times=[];drawMeter();renderLevels()};
+$("themebtn").onclick=function(){
+  var r=document.documentElement;
+  var isDark=r.getAttribute("data-theme")==="dark"||
+    (!r.getAttribute("data-theme")&&window.matchMedia&&matchMedia("(prefers-color-scheme:dark)").matches);
+  r.setAttribute("data-theme",isDark?"light":"dark");
+};
+sel.value=lvl;
+setMode(mode);
+</script>
+
+</body>
+</html>
