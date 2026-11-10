@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none !important}
+img{max-width:100%}
+</style>
+<title>Æfingapróf í jöfnum</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: ten numbered problem cards in one column, a fixed clock pill in the corner, results replace the sheet in place. */
+:root{
+  --bg:#eceff3; --grid:#dae0e8; --paper:#ffffff; --paper-2:#f4f7fa;
+  --ink:#131e28; --muted:#58687a; --line:#d7dee6;
+  --accent:#1b5a86; --accent-soft:#e2ecf4;
+  --good:#166b3d; --good-soft:#dff0e6;
+  --bad:#a4331f; --bad-soft:#f8e5e1;
+  --streak:#9c6510;
+  --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --font-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-math:"Newsreader",Georgia,"Times New Roman",serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-body); font-size:16px; line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px; background-position:-1px -1px;
+}
+.wrap{max-width:660px; margin:0 auto; padding-inline:16px; padding-block:22px 48px}
+
+/* ---- klukka ---- */
+.clock{
+  position:fixed; right:12px; top:calc(env(safe-area-inset-top,0px) + 12px); z-index:5;
+  font-family:var(--font-body); font-variant-numeric:tabular-nums;
+  background:var(--paper); border:1px solid var(--line); border-radius:99px;
+  padding:.4rem .85rem; box-shadow:0 1px 4px rgba(0,0,0,.08);
+  display:flex; align-items:baseline; gap:.45rem;
+}
+.clock .lab{font-size:.66rem; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); font-weight:600}
+.clock .val{font-size:1.05rem; font-weight:600}
+.clock.stopped{border-color:var(--accent)}
+.clock.stopped .val{color:var(--accent)}
+
+.masthead{margin-bottom:4px; padding-right:104px}
+.backlink{font-size:.8rem; color:var(--accent); text-decoration:none}
+.backlink:hover{text-decoration:underline}
+h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.5rem,5vw,2rem); margin:.1rem 0 0; letter-spacing:-.01em; text-wrap:balance}
+.tagline{margin:.2rem 0 0; color:var(--muted); font-size:.9rem; max-width:34em}
+
+.card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:18px; box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+var{font-family:var(--font-math); font-style:italic}
+sup{font-size:.62em; line-height:0; vertical-align:.5em}
+.mth{font-family:var(--font-math)}
+.op{color:var(--muted); padding:0 .1em}
+
+/* ---- kynning ---- */
+.intro{margin-top:20px}
+.intro h2{font-family:var(--font-display); font-weight:500; font-size:1.15rem; margin:0 0 .5rem}
+.rules{margin:0; padding-left:1.15rem}
+.rules li{margin:.3rem 0; font-size:.94rem}
+.kinds{display:grid; gap:7px; margin:14px 0 0}
+.kind{display:flex; align-items:baseline; gap:10px; background:var(--paper-2); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:7px; padding:8px 11px}
+.kind .kn{font-weight:600; font-size:.9rem; flex:none}
+.kind .ke{font-family:var(--font-math); font-size:.98rem; color:var(--muted); min-width:0}
+.btn{font:inherit; font-weight:600; font-size:.95rem; padding:.55rem 1.2rem; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:var(--paper); cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft); filter:none}
+.btn.big{font-size:1.02rem; padding:.65rem 1.5rem; margin-top:16px}
+.btn:focus-visible,input:focus-visible,.linky:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.best{margin-top:12px; font-size:.84rem; color:var(--muted)}
+
+/* ---- prófblað ---- */
+.sheetbar{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:4;
+  background:var(--bg); padding-block:10px; margin-top:16px;
+  border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.sheetbar .prog{font-size:.84rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.sheetbar .prog b{color:var(--ink)}
+.qlist{display:grid; gap:10px; margin-top:14px}
+.grp{margin:10px 0 -2px; font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+.grp:first-child{margin-top:0}
+.q{background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:var(--radius); padding:14px 16px}
+.q.filled{border-left-color:var(--accent)}
+.qhead{display:flex; align-items:baseline; gap:10px}
+.qno{font-family:var(--font-display); font-size:.95rem; color:var(--muted); font-variant-numeric:tabular-nums; flex:none; width:1.6em}
+.qex{font-family:var(--font-math); font-size:clamp(1.25rem,4.6vw,1.6rem); line-height:1.3; overflow-x:auto; min-width:0; flex:1 1 auto}
+.qin{margin-top:9px; display:flex; gap:8px; align-items:center; padding-left:1.6em}
+input[type=text]{
+  flex:1 1 auto; min-width:0; font-family:var(--font-math); font-size:1.18rem;
+  padding:.42rem .6rem; border:1.5px solid var(--line); border-radius:7px;
+  background:var(--paper-2); color:var(--ink);
+}
+input[type=text]:focus{border-color:var(--accent)}
+.qin .eq{font-family:var(--font-math); font-size:1.18rem; color:var(--muted); flex:none}
+.submitrow{margin-top:18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.warn{background:var(--bad-soft); border:1px solid var(--bad); border-radius:8px; padding:11px 13px; margin-top:14px; font-size:.92rem}
+.warn p{margin:.2rem 0}
+.keys{display:flex; gap:5px; align-items:center}
+.keys button.k{font-family:var(--font-math); font-size:1rem; width:2.1rem; height:2.1rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer; padding:0}
+.keys button.pow{width:2.5rem; color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button sup{font-size:.65em; vertical-align:.55em; line-height:0}
+.preview{margin-top:6px; padding-left:1.6em; font-size:.82rem; color:var(--muted)}
+.preview .plab{text-transform:uppercase; letter-spacing:.08em; font-weight:600; font-size:.72rem}
+.preview .pv{font-family:var(--font-math); font-size:1.3rem; color:var(--ink)}
+.preview .pv sup{font-size:.62em; vertical-align:.55em; line-height:0}
+
+
+/* ---- niðurstöður ---- */
+.score{margin-top:18px; background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:20px 18px; box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.scoretop{display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap}
+.grade{font-family:var(--font-display); font-size:3.4rem; line-height:.95; font-variant-numeric:tabular-nums}
+.gradelab{font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+.scoremeta{font-size:.9rem; color:var(--muted); flex:1 1 180px; min-width:0}
+.scoremeta b{color:var(--ink); font-weight:600}
+.bytype{margin-top:16px; padding-top:14px; border-top:1px solid var(--line); display:grid; gap:7px}
+.bt{display:flex; align-items:center; gap:10px; font-size:.9rem}
+.bt .btn2{flex:1 1 auto; min-width:0}
+.bt .cnt{font-variant-numeric:tabular-nums; font-weight:600; flex:none}
+.bt .bar{flex:0 0 74px; height:7px; border-radius:99px; background:var(--paper-2); border:1px solid var(--line); overflow:hidden}
+.bt .bar i{display:block; height:100%; background:var(--good)}
+.bt a{color:var(--accent); font-size:.82rem; white-space:nowrap}
+.verdict{margin-top:14px; font-size:.92rem}
+
+.rlist{display:grid; gap:10px; margin-top:18px}
+.r{background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--good); border-radius:var(--radius); padding:14px 16px}
+.r.wrong{border-left-color:var(--bad)}
+.rhead{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.rno{font-family:var(--font-display); font-size:.95rem; color:var(--muted); font-variant-numeric:tabular-nums; flex:none; width:1.6em}
+.rex{font-family:var(--font-math); font-size:1.28rem; flex:1 1 auto; min-width:0; overflow-x:auto}
+.mark{flex:none; font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:.15rem .5rem; border-radius:99px}
+.mark.ok{background:var(--good-soft); color:var(--good)}
+.mark.no{background:var(--bad-soft); color:var(--bad)}
+.rbody{padding-left:1.6em; margin-top:7px; font-size:.92rem}
+.rbody p{margin:.25rem 0}
+.rbody .yours{color:var(--muted)}
+.rbody .yours i{font-family:var(--font-math); font-style:normal; color:var(--ink)}
+.rbody .why{color:var(--muted); font-size:.86rem}
+.sol{margin-top:9px; background:var(--paper-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px}
+.sol .lbl{font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600}
+.sol ol{margin:.35rem 0 .2rem; padding-left:1.3rem}
+.sol li{font-family:var(--font-math); font-size:1.04rem; margin:.14rem 0}
+.sol li .note{font-family:var(--font-body); font-size:.8rem; color:var(--muted)}
+.sol .ans{font-family:var(--font-math); font-size:1.12rem; margin-top:.3rem}
+.ptab{border-collapse:collapse; margin:.3rem 0; font-family:var(--font-math); font-size:.98rem; font-variant-numeric:tabular-nums}
+.ptab td{padding:.1rem .55rem .1rem 0; text-align:right}
+.ptab td:first-child{text-align:left}
+.ptab tr.hit td{color:var(--good); font-weight:600}
+
+.sitefoot{margin-top:30px; padding-top:16px; border-top:1px solid var(--line); text-align:center}
+.sitefoot p{margin:0; font-family:var(--font-display); font-size:.95rem; color:var(--muted)}
+.sitefoot .who{color:var(--ink); font-weight:500}
+.linky{background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer}
+.frac{display:inline-flex; flex-direction:column; align-items:stretch; vertical-align:middle; margin:0 .12em; line-height:1.2; text-align:center}
+.frac>.nu{padding:0 .3em .1em; border-bottom:max(1.5px,.055em) solid currentColor; white-space:nowrap}
+.frac>.de{padding:.1em .3em 0; white-space:nowrap}
+.qex .frac{font-size:.9em}
+.sys{display:inline-flex; flex-direction:column; gap:.1em; border-left:2px solid var(--muted); padding-left:.55em; white-space:nowrap}
+.qin label{display:flex; align-items:center; gap:8px; flex:1 1 0; min-width:0}
+.qin.two{gap:14px}
+.sol li .frac{font-size:.95em}
+.rex .frac{font-size:.92em}
+</style>
+
+</head>
+<body>
+<div class="clock" id="clock" hidden>
+  <span class="lab">Tími</span><span class="val" id="clockval">0:00</span>
+</div>
+
+<div class="wrap">
+  <div class="masthead">
+    <a class="backlink" href="../">&larr; Stærðfræðiæfingar</a>
+    <h1>Æfingapróf í jöfnum</h1>
+    <p class="tagline">Tíu dæmi í erfiðleikaröð. Þú færð engin svör fyrr en þú skilar.</p>
+  </div>
+
+  <!-- ══════════ KYNNING ══════════ -->
+  <div id="screen-intro">
+    <div class="card intro">
+      <h2>Áður en þú byrjar</h2>
+      <ol class="rules">
+        <li>Tíu dæmi. Hvert dæmi gildir <strong>1 stig</strong>, svo einkunnin er fjöldi réttra svara. Í jöfnuhneppum þurfa bæði <var>x</var> og <var>y</var> að vera rétt.</li>
+        <li>Hafðu blað og blýant við höndina og sýndu alla útreikninga á blaðinu — eins og á prófi.</li>
+        <li>Öll svör í dæmum 1&ndash;7, 9 og 10 eru <strong>heilar tölur</strong>.</li>
+        <li>Í dæmi 8 skrifar þú formúlu. Notaðu skástrik og sviga fyrir brot, t.d. <span class="mth">(A &minus; 5b)/3</span>.</li>
+        <li><strong>Engin svör birtast meðan á prófinu stendur.</strong> Þú sérð hvað var rétt og rangt fyrst þegar þú skilar.</li>
+        <li>Klukkan í horninu byrjar þegar þú ýtir á hnappinn. Hún stoppar þig ekki; hún er til þess að þú sjáir hvað þú ert lengi.</li>
+      </ol>
+
+      <div class="kinds">
+        <div class="kind"><span class="kn">1&ndash;2. Einfaldar jöfnur</span><span class="ke">6<var>x</var> &minus; 5 = 3<var>x</var> + 1</span></div>
+        <div class="kind"><span class="kn">3&ndash;7. Jöfnur með brotum</span><span class="ke"><span class="frac"><span class="nu">2<var>x</var> &minus; 2</span><span class="de">3</span></span> &minus; 3 = <span class="frac"><span class="nu"><var>x</var> + 2</span><span class="de">4</span></span></span></div>
+        <div class="kind"><span class="kn">8. Bókstafajafna</span><span class="ke">Leysið fyrir <var>d</var>: <var>A</var> = 5<var>b</var> + 3<var>d</var></span></div>
+        <div class="kind"><span class="kn">9&ndash;10. Jöfnuhneppi</span><span class="ke"><var>x</var> + <var>y</var> = 25 &nbsp;|&nbsp; <var>x</var> &minus; <var>y</var> = 11</span></div>
+      </div>
+
+      <button class="btn big" id="startbtn" type="button">Byrja prófið</button>
+      <p class="best" id="bestline"></p>
+    </div>
+  </div>
+
+  <!-- ══════════ PRÓFBLAÐ ══════════ -->
+  <div id="screen-sheet" hidden>
+    <div class="sheetbar">
+      <span class="prog" id="prog"></span>
+      <button class="btn" id="handin" type="button">Skila prófi</button>
+    </div>
+    <div id="warnbox" hidden></div>
+    <div class="qlist" id="qlist"></div>
+    <div class="submitrow">
+      <button class="btn" id="handin2" type="button">Skila prófi</button>
+      <span class="prog" id="prog2"></span>
+    </div>
+  </div>
+
+  <!-- ══════════ NIÐURSTÖÐUR ══════════ -->
+  <div id="screen-result" hidden>
+    <div class="score" id="scorebox"></div>
+    <div class="rlist" id="rlist"></div>
+    <div class="submitrow">
+      <button class="btn" id="again" type="button">Nýtt æfingapróf</button>
+      <a class="btn ghost" href="../" style="text-decoration:none">Til baka á yfirlitið</a>
+    </div>
+  </div>
+
+  <footer class="sitefoot">
+    <p><span class="who">Gyða</span> stærðfræðikennari við FÁ</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ════════ hjálparföll ════════ */
+function rnd(n){return Math.floor(Math.random()*n)}
+function ri(a,b){return a+rnd(b-a+1)}
+function nz(a,b){var v;do{v=ri(a,b)}while(v===0);return v}
+/* lausn: oftast jákvæð heiltala, stundum neikvæð */
+function xr(lo,hi){return Math.random()<.8?ri(1,hi):-ri(1,lo)}
+function pick(a){return a[rnd(a.length)]}
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=a%b;a=b;b=t}return a}
+function lcm(a,b){return a/gcd(a,b)*b}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+/* ════════ framsetning ════════ */
+function N(n){return (n<0?"&minus;":"")+Math.abs(n)}
+function V(v){return "<var>"+v+"</var>"}
+/* liðir: [[stuðull, breyta|null], …] – núll-liðum sleppt */
+function ex(ts){
+  var s="",first=true;
+  for(var i=0;i<ts.length;i++){
+    var c=ts[i][0],v=ts[i][1];
+    if(c===0)continue;
+    var a=Math.abs(c),body=v?((a===1?"":a)+V(v)):String(a);
+    if(first){s+=(c<0?"&minus;":"")+body;first=false}
+    else s+='<span class="op">'+(c<0?"&minus;":"+")+"</span>"+body;
+  }
+  return first?"0":s;
+}
+function lin(a,b,v){return ex([[a,v||"x"],[b,null]])}
+function fr(nu,de){return '<span class="frac"><span class="nu">'+nu+'</span><span class="de">'+de+"</span></span>"}
+function sys(e1,e2){return '<span class="sys"><span>'+e1+"</span><span>"+e2+"</span></span>"}
+function cx(a,v){var A=Math.abs(a);return (a<0?"&minus;":"")+(A===1?"":A)+V(v||"x")}
+
+/* Leysir Ax + B = Cx + D skref fyrir skref (jafnan sjálf er þegar sýnd) */
+function linSteps(A,B,C,D,sol){
+  var E=A-C,F=D-B,h=[];
+  if(!(C===0&&B===0))
+    h.push(cx(E)+" = "+N(F)+' <span class="note">'+(C!==0?V("x")+"-liðir til vinstri, ":"")+"tölur til hægri</span>");
+  if(E!==1)h.push(V("x")+" = "+fr(N(F),N(E))+" = "+N(sol)+' <span class="note">deila með '+N(E)+"</span>");
+  return h;
+}
+
+/* ════════ dæmasmiðir ════════ */
+/* 1. ax + b = cx + d */
+function t1(){
+  for(;;){
+    var x=xr(5,9),a=ri(3,9),c=ri(1,a-1),b=nz(-12,12),d=(a-c)*x+b;
+    if(d===0||Math.abs(d)>40)continue;
+    return{cat:"einf",sol:x,
+      q:lin(a,b)+" = "+lin(c,d),
+      lhs:function(t){return a*t+b},rhs:function(t){return c*t+d},
+      steps:linSteps(a,b,c,d,x)};
+  }
+}
+/* 2. ax + L = c(x + d) */
+function t2(){
+  for(;;){
+    var x=xr(4,10),a=ri(3,9),c=ri(2,5),d=nz(-6,6);
+    if(a===c)continue;
+    var L=(c-a)*x+c*d;
+    if(L===0||Math.abs(L)>30)continue;
+    return{cat:"einf",sol:x,
+      q:lin(a,L)+" = "+c+"("+lin(1,d)+")",
+      lhs:function(t){return a*t+L},rhs:function(t){return c*(t+d)},
+      steps:[lin(a,L)+" = "+lin(c,c*d)+' <span class="note">margfalda inn í svigann</span>']
+            .concat(linSteps(a,L,c,c*d,x))};
+  }
+}
+/* 3. p/q = (x + r)/n */
+function t3(){
+  for(;;){
+    var q=ri(2,9),p=ri(1,q-1),k=ri(2,6),n=q*k,r=nz(-9,9),x=p*k-r;
+    if(gcd(p,q)!==1||n>60||x===0||Math.abs(x)>20||(x<0&&Math.random()<.7))continue;
+    var swap=Math.random()<.35;
+    var L=fr(p,q),R=fr(lin(1,r),n);
+    return{cat:"brot",sol:x,
+      q:swap?R+" = "+L:L+" = "+R,
+      lhs:function(t){return p/q},rhs:function(t){return (t+r)/n},
+      steps:[p+" &middot; "+n+" = "+q+"("+lin(1,r)+")"+' <span class="note">krossmargfalda</span>',
+             N(p*n)+" = "+lin(q,q*r)].concat(linSteps(q,q*r,0,p*n,x))};
+  }
+}
+/* 4. n1/d1 + kx/d2 = N/d3 */
+function t4(){
+  for(;;){
+    var d1=pick([2,3,4,5,6]),d2=pick([2,3,4,5,6,8,9,10,12]),n1=ri(1,d1-1),k=ri(1,5),x=ri(1,15);
+    if(gcd(n1,d1)!==1||d1===d2)continue;
+    var num=n1*d2+k*x*d1,den=d1*d2,g=gcd(num,den),Nn=num/g,d3=den/g;
+    if(d3<2||d3>12||Nn>80)continue;
+    var L=lcm(lcm(d1,d2),d3);
+    if(L>24)continue;
+    var A=L/d2*k,B=L/d1*n1,D=L/d3*Nn;
+    return{cat:"brot",sol:x,
+      q:fr(n1,d1)+" + "+fr(cx(k),d2)+" = "+fr(Nn,d3),
+      lhs:function(t){return n1/d1+k*t/d2},rhs:function(t){return Nn/d3},
+      steps:[lin(A,0)+" + "+B+" = "+D+' <span class="note">margfalda alla liði með samnefnaranum '+L+"</span>"]
+            .concat(linSteps(A,B,0,D,x))};
+  }
+}
+/* 5. c = k(a − x)/n  eða  c = k(x − a)/n */
+function t5(){
+  for(;;){
+    var k=ri(2,6),n=ri(2,9),a=ri(1,9),x=xr(9,12),flip=Math.random()<.5;
+    if(k%n===0||n%k===0)continue;
+    var inner=flip?(x-a):(a-x);
+    if(inner===0||(k*inner)%n!==0)continue;
+    var c=k*inner/n;
+    if(Math.abs(c)>20)continue;
+    var innerH=flip?lin(1,-a):ex([[a,null],[-1,"x"]]);
+    var expd=flip?ex([[k,"x"],[-k*a,null]]):ex([[k*a,null],[-k,"x"]]);
+    var C=flip?k:-k,D=flip?-k*a:k*a;
+    return{cat:"brot",sol:x,
+      q:N(c)+" = "+fr(k+"("+innerH+")",n),
+      lhs:function(t){return c},rhs:function(t){return k*(flip?t-a:a-t)/n},
+      steps:[N(c*n)+" = "+k+"("+innerH+")"+' <span class="note">margfalda báðar hliðar með '+n+"</span>",
+             N(c*n)+" = "+expd+' <span class="note">margfalda inn í svigann</span>']
+            .concat(linSteps(0,c*n,C,D,x))};
+  }
+}
+/* 6. p/(x + a) = q/(x + b) */
+function t6(){
+  for(;;){
+    var p=ri(2,9),q=ri(2,9),a=nz(-6,6),b=nz(-6,6);
+    if(p===q||a===b)continue;
+    var num=q*a-p*b,den=p-q;
+    if(num%den!==0)continue;
+    var x=num/den;
+    if(x+a===0||x+b===0||Math.abs(x)>15||x===0||(x<0&&Math.random()<.7))continue;
+    return{cat:"brot",sol:x,
+      q:fr(p,lin(1,a))+" = "+fr(q,lin(1,b)),
+      lhs:function(t){return p/(t+a)},rhs:function(t){return q/(t+b)},
+      steps:[p+"("+lin(1,b)+") = "+q+"("+lin(1,a)+")"+' <span class="note">krossmargfalda</span>',
+             lin(p,p*b)+" = "+lin(q,q*a)].concat(linSteps(p,p*b,q,q*a,x))};
+  }
+}
+/* 7. (ax + b)/m − c = (x + d)/n */
+function t7(){
+  for(;;){
+    var m=pick([2,3,4,5,6]),n=pick([2,3,4,5,6]),a=ri(2,5),b=nz(-6,6),c=ri(1,5),d=nz(-8,8);
+    if(m===n)continue;
+    var L=lcm(m,n);
+    if(L>20)continue;
+    var P=L/m,Q=L/n,den=P*a-Q,num=Q*d-P*b+L*c;
+    if(den===0||num%den!==0)continue;
+    var x=num/den;
+    if(x===0||Math.abs(x)>15||(x<0&&Math.random()<.7))continue;
+    return{cat:"brot",sol:x,
+      q:fr(lin(a,b),m)+" &minus; "+c+" = "+fr(lin(1,d),n),
+      lhs:function(t){return (a*t+b)/m-c},rhs:function(t){return (t+d)/n},
+      steps:[(P===1?"":P)+"("+lin(a,b)+") &minus; "+(L*c)+" = "+(Q===1?"":Q)+"("+lin(1,d)+")"+
+               ' <span class="note">margfalda alla liði með samnefnaranum '+L+"</span>",
+             ex([[P*a,"x"],[P*b,null],[-L*c,null]])+" = "+lin(Q,Q*d)+' <span class="note">margfalda inn í sviga</span>',
+             lin(P*a,P*b-L*c)+" = "+lin(Q,Q*d)+' <span class="note">draga saman</span>']
+            .concat(linSteps(P*a,P*b-L*c,Q,Q*d,x))};
+  }
+}
+/* 8. L = k1·u + k2·w – leysið fyrir w */
+var LETTERS=[["A","b","d"],["S","a","c"],["P","m","n"],["V","r","t"],["K","p","q"],["T","a","b"]];
+function t8(){
+  var Ls=pick(LETTERS),k1,k2;
+  do{k1=ri(2,9);k2=ri(2,9)}while(k1===k2);
+  var L=Ls[0],u=Ls[1],w=Ls[2];
+  return{cat:"bokst",lit:true,L:L,u:u,w:w,k1:k1,k2:k2,
+    q:"Leysið jöfnuna fyrir "+V(w)+": &nbsp; "+V(L)+" = "+k1+V(u)+" + "+k2+V(w),
+    ansH:V(w)+" = "+fr(V(L)+' <span class="op">&minus;</span>'+k1+V(u),k2),
+    f:function(Lv,uv){return (Lv-k1*uv)/k2},
+    steps:[V(L)+" &minus; "+k1+V(u)+" = "+k2+V(w)+' <span class="note">draga '+k1+V(u)+" frá báðum hliðum</span>",
+           fr(V(L)+" &minus; "+k1+V(u),k2)+" = "+V(w)+' <span class="note">deila báðum hliðum með '+k2+"</span>"]};
+}
+/* 9. leggja beint saman – y dettur út */
+function t9(){
+  for(;;){
+    var x=ri(2,20),y=ri(1,15),a1=pick([1,1,1,2,3]),a2=pick([1,1,1,2,3]),b=pick([1,1,1,2,3]);
+    if(x===y)continue;
+    var c1=a1*x+b*y,c2=a2*x-b*y;
+    if(c2===0||c1>90||Math.abs(c2)>60||gcd(gcd(a1,b),c1)>1||gcd(gcd(a2,b),c2)>1)continue;
+    return{cat:"hneppi",sys:true,sol:[x,y],
+      eqs:[[a1,b,c1],[a2,-b,c2]],
+      q:sys(ex([[a1,"x"],[b,"y"]])+" = "+N(c1),ex([[a2,"x"],[-b,"y"]])+" = "+N(c2)),
+      steps:[cx(a1+a2)+" = "+N(c1+c2)+' <span class="note">leggja jöfnurnar saman, '+V("y")+" dettur út</span>",
+             V("x")+" = "+fr(N(c1+c2),a1+a2)+" = "+N(x),
+             ex([[a1*x,null],[b,"y"]])+" = "+N(c1)+' <span class="note">setja '+V("x")+" = "+N(x)+" inn í efri jöfnuna</span>",
+             cx(b,"y")+" = "+N(c1-a1*x)+(b===1?"":" &nbsp;⇒&nbsp; "+V("y")+" = "+N(y))]};
+  }
+}
+/* 10. margfalda báðar jöfnurnar */
+function t10(){
+  for(;;){
+    var a1=ri(2,7),b1=ri(2,7),a2=ri(2,7),b2=ri(2,7),x=ri(1,12),y=ri(1,12);
+    if(a1===a2||b1===b2||b1%b2===0||b2%b1===0||a1%a2===0||a2%a1===0)continue;
+    var c1=a1*x+b1*y,c2=a2*x-b2*y;
+    if(c2===0||c1>120||Math.abs(c2)>80||gcd(gcd(a1,b1),c1)>1||gcd(gcd(a2,b2),c2)>1)continue;
+    var E=a1*b2+a2*b1,F=c1*b2+c2*b1;
+    return{cat:"hneppi",sys:true,sol:[x,y],
+      eqs:[[a1,b1,c1],[a2,-b2,c2]],
+      q:sys(ex([[a1,"x"],[b1,"y"]])+" = "+N(c1),ex([[a2,"x"],[-b2,"y"]])+" = "+N(c2)),
+      steps:[ex([[a1*b2,"x"],[b1*b2,"y"]])+" = "+N(c1*b2)+' <span class="note">efri jafnan margfölduð með '+b2+"</span>",
+             ex([[a2*b1,"x"],[-b1*b2,"y"]])+" = "+N(c2*b1)+' <span class="note">neðri jafnan margfölduð með '+b1+"</span>",
+             cx(E)+" = "+N(F)+' <span class="note">leggja saman, '+V("y")+" dettur út</span>",
+             V("x")+" = "+fr(N(F),E)+" = "+N(x),
+             ex([[a1*x,null],[b1,"y"]])+" = "+N(c1)+' <span class="note">setja '+V("x")+" = "+N(x)+" inn í efri jöfnuna</span>",
+             cx(b1,"y")+" = "+N(c1-a1*x)+" &nbsp;⇒&nbsp; "+V("y")+" = "+N(y)]};
+  }
+}
+
+var BLUEPRINT=[t1,t2,t3,t4,t5,t6,t7,t8,t9,t10];
+var CATNM={einf:"Einfaldar jöfnur",brot:"Jöfnur með brotum",bokst:"Bókstafajöfnur",hneppi:"Jöfnuhneppi"};
+var CATS=["einf","brot","bokst","hneppi"];
+var KINDURL={einf:"../einfaldar-jofnur/",brot:"../jofnur-brot/",bokst:"../bokstafajofnur/",hneppi:"../jofnuhneppi/"};
+function makeExam(){return BLUEPRINT.map(function(f){return f()})}
+
+/* ════════ yfirferð ════════ */
+/* talnasvar: heiltala, tugabrot (komma eða punktur) eða brot a/b; "x =" má fylgja */
+function parseNum(raw){
+  var s=raw.replace(/\s+/g,"").replace(/[−–—]/g,"-").replace(/,/g,".").replace(/^[a-zA-Z]=/,"");
+  var m=s.match(/^(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)$/);
+  if(m){var d=+m[2];return d===0?NaN:+m[1]/d}
+  if(/^-?\d+(\.\d+)?$/.test(s))return +s;
+  return NaN;
+}
+function numOk(raw,sol){var v=parseNum(raw);return !isNaN(v)&&Math.abs(v-sol)<1e-9}
+
+/* formúlusvar: aðeins tölur, + − · / ( ) og bókstafirnir tveir */
+function litJs(raw,p){
+  var s=raw.replace(/\s+/g,"").replace(/[−–—]/g,"-").replace(/[·×∙]/g,"*").replace(/[:÷]/g,"/").replace(/,/g,".")
+           .replace(/[\[\{]/g,"(").replace(/[\]\}]/g,")");
+  s=s.replace(new RegExp("^"+p.w+"="),"");
+  if(!s)throw new Error("Ósvarað.");
+  for(var i=0;i<s.length;i++){
+    var ch=s[i];
+    if(/[0-9.+\-*/()]/.test(ch))continue;
+    if(ch===p.L||ch===p.u)continue;
+    if(/[a-zA-Z]/.test(ch))throw new Error("Bókstafurinn «"+ch+"» á ekki heima í svarinu. Notaðu "+p.L+" og "+p.u+".");
+    throw new Error("Ég skil ekki táknið «"+ch+"».");
+  }
+  var lt="["+p.L+p.u+"]";
+  s=s.replace(new RegExp("([0-9.)]|"+lt+")(?=("+lt+"|\\())","g"),"$1*");
+  return s;
+}
+function litCheck(raw,p){
+  var js;
+  try{js=litJs(raw,p)}catch(e){return{ok:false,msg:e.message}}
+  var fn;
+  try{fn=Function(p.L,p.u,'"use strict";return ('+js+");")}catch(e){return{ok:false,msg:"Svarið er ekki rétt skrifað — athugaðu svigana."}}
+  var tests=[[30,4],[7,2],[12.5,1.5],[3,10],[100,-9],[-4,3.5]];
+  for(var i=0;i<tests.length;i++){
+    var v,r=p.f(tests[i][0],tests[i][1]);
+    try{v=fn(tests[i][0],tests[i][1])}catch(e){return{ok:false,msg:"Svarið er ekki rétt skrifað — athugaðu svigana."}}
+    if(typeof v!=="number"||!isFinite(v)||Math.abs(v-r)>1e-9*Math.max(1,Math.abs(r)))return{ok:false};
+  }
+  return{ok:true};
+}
+
+function fmtVal(v){
+  if(!isFinite(v))return "óskilgreint";
+  var r=Math.round(v*100)/100;
+  return (Math.abs(r-v)>1e-9?"um ":"")+String(r).replace(".",",").replace("-","&minus;");
+}
+
+/* ════════ staða ════════ */
+var KEY="profi-jofnur-v1";
+var store={best:null,bestMs:null,taken:0};
+try{
+  var raw0=localStorage.getItem(KEY);
+  if(raw0){var pp=JSON.parse(raw0);if(pp&&typeof pp==="object"){
+    if(typeof pp.best==="number")store.best=pp.best;
+    if(typeof pp.bestMs==="number")store.bestMs=pp.bestMs;
+    if(typeof pp.taken==="number")store.taken=pp.taken;
+  }}
+}catch(e){}
+function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+
+/* ════════ viðmót ════════ */
+function $(id){return document.getElementById(id)}
+var exam=null,t0=0,timer=null,elapsed=0;
+
+function fmt(ms){var s=Math.floor(ms/1000),m=Math.floor(s/60);s=s%60;return m+":"+(s<10?"0":"")+s}
+function tick(){$("clockval").textContent=fmt(Date.now()-t0)}
+function startClock(){t0=Date.now();$("clock").hidden=false;$("clock").className="clock";tick();timer=setInterval(tick,1000)}
+function stopClock(){if(timer){clearInterval(timer);timer=null}elapsed=Date.now()-t0;$("clockval").textContent=fmt(elapsed);$("clock").className="clock stopped"}
+
+function bestLine(){
+  if(store.best===null){$("bestline").textContent="";return}
+  $("bestline").textContent="Besta einkunn þín: "+store.best.toFixed(1).replace(".",",")+
+    " af 10"+(store.bestMs?" á "+fmt(store.bestMs):"")+" · "+store.taken+" próf tekin.";
+}
+
+function inputsOf(i){return Array.prototype.slice.call(document.querySelectorAll('[data-q="'+i+'"]'))}
+function updateProg(){
+  var n=0;
+  for(var i=0;i<10;i++){
+    var ins=inputsOf(i),all=ins.every(function(e){return e.value.trim().length>0});
+    if(all)n++;
+    ins[0].closest(".q").className="q"+(all?" filled":"");
+  }
+  var txt="Svarað <b>"+n+"</b> af 10";
+  $("prog").innerHTML=txt;$("prog2").innerHTML=txt;
+  return n;
+}
+
+function inp(i,k,lab,ph,wide){
+  return '<label><span class="eq">'+lab+" =</span>"+
+    '<input type="text" data-q="'+i+'" data-k="'+k+'" autocomplete="off" autocapitalize="off" spellcheck="false" '+
+    (wide?"":'inputmode="text" ')+'aria-label="Svar við dæmi '+(i+1)+(k?" ("+k+")":"")+'" placeholder="'+ph+'"></label>';
+}
+function renderSheet(){
+  var h="",i;
+  for(i=0;i<exam.length;i++){
+    var p=exam[i];
+    if(i===0||p.cat!==exam[i-1].cat)h+='<div class="grp">'+CATNM[p.cat]+"</div>";
+    h+='<div class="q"><div class="qhead"><span class="qno">'+(i+1)+'.</span><span class="qex">'+p.q+"</span></div>";
+    if(p.sys)h+='<div class="qin two">'+inp(i,"x",V("x"),"svar")+inp(i,"y",V("y"),"svar")+"</div>";
+    else if(p.lit)h+='<div class="qin">'+inp(i,"",V(p.w),"t.d. ("+p.L+" − 2"+p.u+")/5",true)+"</div>";
+    else h+='<div class="qin">'+inp(i,"",V("x"),"svar")+"</div>";
+    h+="</div>";
+  }
+  $("qlist").innerHTML=h;
+  var all=document.querySelectorAll("#qlist input");
+  Array.prototype.forEach.call(all,function(el,idx){
+    el.addEventListener("input",updateProg);
+    el.addEventListener("keydown",function(e){
+      if(e.key!=="Enter")return;
+      e.preventDefault();
+      var nx=all[idx+1];
+      if(nx)nx.focus();else this.blur();
+    });
+  });
+  updateProg();
+}
+
+function handIn(){
+  var n=updateProg();
+  if(n<10&&!$("warnbox").dataset.armed){
+    $("warnbox").innerHTML='<div class="warn"><p><strong>'+(10-n)+
+      (10-n===1?" dæmi er":" dæmi eru")+" ósvarað.</strong></p>"+
+      "<p>Ósvarað dæmi telst rangt. Ýttu á «Skila prófi» aftur til að skila samt.</p></div>";
+    $("warnbox").hidden=false;$("warnbox").dataset.armed="1";
+    $("warnbox").scrollIntoView({block:"nearest"});
+    return;
+  }
+  stopClock();
+  var res=[],right=0,by={einf:[0,0],brot:[0,0],bokst:[0,0],hneppi:[0,0]},i;
+  for(i=0;i<exam.length;i++){
+    var p=exam[i],ins=inputsOf(i),vals=ins.map(function(e){return e.value.trim()}),ok,extra=null;
+    if(p.sys){
+      ok=numOk(vals[0],p.sol[0])&&numOk(vals[1],p.sol[1]);
+    }else if(p.lit){
+      var lc=vals[0]?litCheck(vals[0],p):{ok:false};
+      ok=lc.ok;extra=lc.msg||null;
+    }else{
+      ok=numOk(vals[0],p.sol);
+    }
+    if(ok)right++;
+    by[p.cat][1]++;if(ok)by[p.cat][0]++;
+    res.push({vals:vals,ok:ok,msg:extra});
+  }
+  store.taken++;
+  if(store.best===null||right>store.best||(right===store.best&&elapsed<store.bestMs)){store.best=right;store.bestMs=elapsed}
+  saveStore();
+  renderResult(res,right,by);
+  $("screen-sheet").hidden=true;$("screen-result").hidden=false;
+  window.scrollTo(0,0);
+}
+
+function whyHtml(p,it){
+  if(it.msg)return '<p class="why">'+esc(it.msg)+"</p>";
+  if(p.lit||!it.vals.some(function(v){return v}))return "";
+  if(p.sys){
+    var x=parseNum(it.vals[0]),y=parseNum(it.vals[1]);
+    if(isNaN(x)||isNaN(y))return '<p class="why">Svarið þarf að vera tala í báðum reitum.</p>';
+    var bad=[];
+    for(var j=0;j<2;j++){var e=p.eqs[j],l=e[0]*x+e[1]*y;if(Math.abs(l-e[2])>1e-9)bad.push((j?"neðri":"efri")+" jöfnunni fæst "+fmtVal(l)+" en ekki "+N(e[2]))}
+    return bad.length?'<p class="why">Prófun: í '+bad.join(", og í ")+".</p>":"";
+  }
+  var v=parseNum(it.vals[0]);
+  if(isNaN(v))return '<p class="why">Svarið þarf að vera tala.</p>';
+  return '<p class="why">Prófun: ef '+V("x")+" = "+fmtVal(v)+" verður vinstri hliðin "+fmtVal(p.lhs(v))+
+         " en hægri hliðin "+fmtVal(p.rhs(v))+".</p>";
+}
+function answerHtml(p){
+  if(p.sys)return V("x")+" = "+N(p.sol[0])+", &nbsp;"+V("y")+" = "+N(p.sol[1]);
+  if(p.lit)return p.ansH;
+  return V("x")+" = "+N(p.sol);
+}
+function solutionHtml(p){
+  var h='<div class="sol"><span class="lbl">Rétt leið &mdash; '+CATNM[p.cat]+"</span><ol>";
+  for(var i=0;i<p.steps.length;i++)h+="<li>"+p.steps[i]+"</li>";
+  return h+'</ol><p class="ans"><strong>'+answerHtml(p)+"</strong></p></div>";
+}
+
+function renderResult(res,right,by){
+  var grade=right.toFixed(1).replace(".",","),i;
+  var h='<div class="scoretop"><div><span class="gradelab">Einkunn</span><div class="grade">'+grade+
+        '</div></div><div class="scoremeta"><p style="margin:0"><b>'+right+" af 10</b> dæmum rétt."+
+        " Tími: <b>"+fmt(elapsed)+"</b> · um "+fmt(Math.round(elapsed/10))+" á dæmi</p></div></div>";
+  h+='<div class="bytype">';
+  for(i=0;i<CATS.length;i++){
+    var k=CATS[i],a=by[k][0],b=by[k][1],pct=b?Math.round(a/b*100):0;
+    h+='<div class="bt"><span class="btn2">'+CATNM[k]+'</span><span class="bar"><i style="width:'+pct+'%"></i></span>'+
+       '<span class="cnt">'+a+"/"+b+"</span>"+
+       (a<b?'<a href="'+KINDURL[k]+'">æfa</a>':'<a style="visibility:hidden">æfa</a>')+"</div>";
+  }
+  h+="</div>";
+  var weak=[];
+  for(i=0;i<CATS.length;i++)if(by[CATS[i]][0]<by[CATS[i]][1])weak.push(CATNM[CATS[i]].toLowerCase());
+  h+='<p class="verdict">'+(
+    right===10?"Allt rétt. Þú ert með efnið á valdi þínu."
+    :right>=8?"Sterkt. Það sem vantar er "+weak.join(" og ")+" — farðu í fimihlutann þar og taktu tíu í röð."
+    :right>=5?"Hálfnað. Þú þarft meiri æfingu í "+weak.join(" og ")+" áður en þú tekur prófið aftur."
+    :"Þetta er ekki komið enn. Farðu í æfingahlutann í "+weak.join(" og ")+
+     ", notaðu vísbendingarnar, og taktu svo fimihlutann þangað til þú nærð tíu í röð.")+"</p>";
+  $("scorebox").innerHTML=h;
+
+  var r="";
+  for(i=0;i<exam.length;i++){
+    var p=exam[i],it=res[i];
+    r+='<div class="r'+(it.ok?"":" wrong")+'"><div class="rhead"><span class="rno">'+(i+1)+
+       '.</span><span class="rex">'+p.q+'</span><span class="mark '+(it.ok?"ok":"no")+'">'+(it.ok?"rétt":"rangt")+"</span></div>";
+    r+='<div class="rbody">';
+    if(it.ok){
+      r+='<p class="yours"><i>'+answerHtml(p)+"</i></p>";
+    }else{
+      var shown=p.sys?(it.vals[0]||it.vals[1]?"<i>x = "+esc(it.vals[0]||"?")+", y = "+esc(it.vals[1]||"?")+"</i>":"<i>ósvarað</i>")
+                     :(it.vals[0]?"<i>"+esc(it.vals[0])+"</i>":"<i>ósvarað</i>");
+      r+='<p class="yours">Þitt svar: '+shown+"</p>"+whyHtml(p,it)+solutionHtml(p);
+    }
+    r+="</div></div>";
+  }
+  $("rlist").innerHTML=r;
+}
+
+function newExam(){
+  exam=makeExam();
+  renderSheet();
+  $("warnbox").hidden=true;$("warnbox").removeAttribute("data-armed");
+  $("screen-intro").hidden=true;$("screen-result").hidden=true;$("screen-sheet").hidden=false;
+  startClock();
+  window.scrollTo(0,0);
+  var f=document.querySelector("#qlist input");if(f)f.focus();
+}
+
+$("startbtn").onclick=newExam;
+$("again").onclick=newExam;
+$("handin").onclick=handIn;
+$("handin2").onclick=handIn;
+bestLine();
+</script>
+
+</body>
+</html>
