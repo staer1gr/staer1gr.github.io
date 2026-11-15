@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none !important}
+img{max-width:100%}
+</style>
+<title>Hnit punkts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one focused problem card on graph-paper ground; streak meter directly above the answer field; level map below. */
+:root{
+  --bg:#eceff3; --grid:#dae0e8; --paper:#ffffff; --paper-2:#f4f7fa;
+  --ink:#131e28; --muted:#58687a; --line:#d7dee6;
+  --accent:#1b5a86; --accent-soft:#e2ecf4;
+  --good:#166b3d; --good-soft:#dff0e6;
+  --bad:#a4331f; --bad-soft:#f8e5e1;
+  --streak:#9c6510;
+  --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --font-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-math:"Newsreader",Georgia,"Times New Roman",serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1517; --grid:#182225; --paper:#151e20; --paper-2:#1b2528;
+  --ink:#e5ece8; --muted:#93a5a0; --line:#2a3639;
+  --accent:#6fb8da; --accent-soft:#17303c;
+  --good:#54c18d; --good-soft:#12301f;
+  --bad:#eb8a78; --bad-soft:#38201b;
+  --streak:#e3ac52;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-body); font-size:16px; line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px; background-position:-1px -1px;
+}
+.wrap{max-width:660px; margin:0 auto; padding-inline:16px; padding-block:22px 48px}
+
+.masthead{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px}
+h1{font-family:var(--font-display); font-weight:500; font-size:clamp(1.5rem,5vw,2rem); margin:0; letter-spacing:-.01em; text-wrap:balance}
+.tagline{margin:.15rem 0 0; color:var(--muted); font-size:.9rem; max-width:34em}
+.themebtn{font-family:var(--font-body); font-size:.78rem; color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:.35rem .7rem; cursor:pointer}
+.themebtn:hover{color:var(--ink)}
+
+.controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px}
+.seg{display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:3px}
+.seg button{font:inherit; font-size:.86rem; font-weight:600; border:0; background:transparent; color:var(--muted); padding:.38rem .9rem; border-radius:99px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--paper)}
+select{font:inherit; font-size:.86rem; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:99px; padding:.42rem .7rem; max-width:100%}
+.modenote{margin:0 0 14px; font-size:.82rem; color:var(--muted)}
+
+.card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:20px 18px; box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); font-weight:600}
+.prompt{margin:.2rem 0 0; font-size:.92rem; color:var(--muted)}
+.problem{font-family:var(--font-math); font-size:clamp(1.7rem,6.5vw,2.5rem); line-height:1.3; margin:.35rem 0 .1rem; overflow-x:auto; padding-bottom:.15rem}
+.problem .op{color:var(--muted); padding:0 .1em}
+sup{font-size:.62em; line-height:0; vertical-align:.5em}
+var{font-family:var(--font-math); font-style:italic}
+
+.meter{margin-top:16px; padding-top:14px; border-top:1px solid var(--line)}
+.meterhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap}
+.meterlabel{font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600}
+.meterstat{font-size:.8rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.dots{display:flex; gap:5px; margin-top:8px}
+.dot{flex:1 1 0; min-width:0; height:9px; border-radius:99px; background:var(--paper-2); border:1px solid var(--line)}
+.dot.on{background:var(--streak); border-color:var(--streak)}
+
+.answerrow{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+input[type=text]{
+  flex:1 1 180px; min-width:0; font-family:var(--font-math); font-size:1.35rem;
+  padding:.5rem .65rem; border:1.5px solid var(--line); border-radius:8px;
+  background:var(--paper-2); color:var(--ink);
+}
+input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+.btn{font:inherit; font-weight:600; font-size:.95rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:var(--paper); cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-soft); filter:none}
+.btn:focus-visible,.seg button:focus-visible,.themebtn:focus-visible,.lvl:focus-visible,.linky:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.keys{display:flex; gap:6px; margin-top:8px; align-items:center; flex-wrap:wrap}
+.keys button{font-family:var(--font-math); font-size:1rem; width:2.1rem; height:2.1rem; border:1px solid var(--line); background:var(--paper-2); color:var(--ink); border-radius:7px; cursor:pointer}
+.keys .hint{font-family:var(--font-body); font-size:.78rem; color:var(--muted); margin-left:4px}
+.keys .mth{font-family:var(--font-math)}
+.keys button.pow{width:2.5rem; color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.keys button sup{font-size:.65em; vertical-align:.55em; line-height:0}
+.preview{margin-top:8px; font-size:.82rem; color:var(--muted)}
+.preview .plab{text-transform:uppercase; letter-spacing:.08em; font-weight:600; font-size:.72rem}
+.preview .pv{font-family:var(--font-math); font-size:1.3rem; color:var(--ink)}
+.preview .pv sup{font-size:.62em; vertical-align:.55em; line-height:0}
+
+.fb{margin-top:14px; border-radius:8px; padding:12px 14px; font-size:.94rem; border:1px solid var(--line); background:var(--paper-2)}
+.fb.good{background:var(--good-soft); border-color:var(--good)}
+.fb.bad{background:var(--bad-soft); border-color:var(--bad)}
+.fb.neutral{background:var(--accent-soft); border-color:var(--accent)}
+.fb .mth{font-family:var(--font-math); font-size:1.15em}
+.fb p{margin:.3rem 0}
+.fb ol{margin:.4rem 0 .1rem; padding-left:1.4rem}
+.fb li{font-family:var(--font-math); font-size:1.08rem; margin:.12rem 0}
+.fb .lbl{font-family:var(--font-body); font-size:.76rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; margin-top:0}
+.actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap}
+
+.map{margin-top:32px}
+.map h2{font-family:var(--font-display); font-weight:500; font-size:1.15rem; margin:0 0 .2rem}
+.mapnote{margin:0 0 .7rem; font-size:.82rem; color:var(--muted)}
+.levels{display:grid; gap:8px; margin:0; padding:0; list-style:none}
+.lvl{display:flex; align-items:center; gap:12px; background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:8px; padding:10px 12px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer}
+.lvl:hover{border-color:var(--accent)}
+.lvl[data-cur="1"]{border-left-color:var(--accent)}
+.lvl[data-done="1"]{border-left-color:var(--good)}
+.lvl .n{font-family:var(--font-display); font-size:1.05rem; color:var(--muted); width:1.2em; flex:none; font-variant-numeric:tabular-nums}
+.lvl .txt{flex:1 1 auto; min-width:0}
+.lvl .nm{font-weight:600; font-size:.95rem}
+.lvl .ex{font-family:var(--font-math); font-size:.95rem; color:var(--muted)}
+.lvl .st{flex:none; font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right}
+.lvl[data-done="1"] .st{color:var(--good); font-weight:600}
+.foot{margin-top:22px; font-size:.82rem; color:var(--muted); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center}
+.linky{background:none; border:0; padding:0; font:inherit; color:var(--accent); text-decoration:underline; cursor:pointer}
+.sitefoot{margin-top:28px; padding-top:16px; border-top:1px solid var(--line); text-align:center}
+.sitefoot p{margin:0; font-family:var(--font-display); font-size:.95rem; color:var(--muted)}
+.sitefoot .who{color:var(--ink); font-weight:500}
+@media (prefers-reduced-motion:no-preference){.dot{transition:background .18s ease,border-color .18s ease}}
+</style>
+<style>
+.xlab{font-family:var(--font-math); font-size:1.5rem; align-self:center; white-space:nowrap}
+.answerrow{align-items:center}
+.answerrow input.crd{flex:0 1 5.2rem; text-align:center}
+.answerrow .btn{margin-left:6px}
+.problem{overflow:visible}
+.lvl .ex{font-size:1rem}
+.fb .big{font-family:var(--font-math); font-size:1.2rem}
+.tipbox{margin-top:14px; font-size:.86rem; color:var(--muted); background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 13px}
+.tipbox strong{color:var(--ink); font-weight:600}
+.tipbox ul{margin:.3rem 0 0; padding-left:1.3rem}
+.tipbox li{margin:.2rem 0}
+/* hnitakerfið */
+.plot svg{display:block; width:100%; max-width:440px; height:auto; margin:0 auto}
+.pl-grid{stroke:var(--line); stroke-width:1}
+.pl-ax{stroke:var(--ink); stroke-width:1.6}
+.pl-arr{fill:var(--ink)}
+.pl-t{fill:var(--muted); font-family:var(--font-body); font-size:10.5px}
+.pl-lab{fill:var(--ink); font-family:var(--font-math); font-size:16px; font-style:italic}
+.pl-pt{fill:var(--accent)}
+.pl-ptl{fill:var(--accent); font-family:var(--font-math); font-size:17px; font-weight:600; font-style:italic; paint-order:stroke; stroke:var(--paper); stroke-width:4px; stroke-linejoin:round}
+.pl-gd{stroke:var(--streak); stroke-width:2; stroke-dasharray:5 4}
+.pl-hl{fill:var(--streak); font-family:var(--font-body); font-size:12px; font-weight:700; paint-order:stroke; stroke:var(--paper); stroke-width:4px; stroke-linejoin:round}
+.pl-o{fill:var(--muted); font-family:var(--font-body); font-size:10.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <h1>Hnit punkts</h1>
+      <p class="tagline">Lestu hnit punktsins P í hnitakerfinu og skrifaðu þau sem (<var>x</var>, <var>y</var>). Ný dæmi í hvert skipti — engin tvö eins.</p>
+    </div>
+    <button class="themebtn" id="themebtn" type="button">Ljós / dökk</button>
+  </div>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Hluti">
+      <button type="button" id="mode-learn" aria-pressed="false">Æfingahluti</button>
+      <button type="button" id="mode-drill" aria-pressed="true">Fimihluti</button>
+    </div>
+    <select id="levelsel" aria-label="Þyngdarstig"></select>
+  </div>
+  <p class="modenote" id="modenote"></p>
+
+  <div class="card">
+    <div class="eyebrow" id="lvlname"></div>
+    <p class="prompt" id="prompt"></p>
+    <div class="problem" id="problem" aria-live="polite"></div>
+
+    <div class="meter">
+      <div class="meterhead">
+        <span class="meterlabel" id="meterlabel">Rétt í röð</span>
+        <span class="meterstat" id="meterstat"></span>
+      </div>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <div class="answerrow" id="answerrow"></div>
+    <div class="keys" id="keys">
+      <button type="button" data-ins="−" aria-label="Mínus">&minus;</button>
+      <span class="hint" id="keyhint">Skrifaðu x-hnitið í fyrri reitinn og y-hnitið í þann seinni</span>
+    </div>
+
+    <div class="fb" id="fb" hidden></div>
+    <div class="actions" id="actions"></div>
+  </div>
+
+  <div class="map">
+    <div id="themap">
+      <h2>Þyngdarstig æfingahlutans</h2>
+      <p class="mapnote">Í æfingahlutanum geturðu beðið um vísbendingar sem teikna hjálparlínur frá punktinum að ásunum. Fimihlutinn hefur eitt stig: allar tegundir blandaðar, eins og á prófi.</p>
+      <ul class="levels" id="levels"></ul>
+      <div class="tipbox"><strong>Að lesa hnit punkts:</strong>
+        <ul>
+          <li>Byrjaðu í <strong>upphafspunktinum</strong> (0, 0), þar sem ásarnir skerast.</li>
+          <li><var>x</var>-hnitið segir hve langt <em>til hægri</em> (+) eða <em>til vinstri</em> (−) punkturinn er. Lestu það á lárétta ásnum.</li>
+          <li><var>y</var>-hnitið segir hve langt <em>upp</em> (+) eða <em>niður</em> (−) punkturinn er. Lestu það á lóðrétta ásnum.</li>
+          <li><var>x</var> kemur alltaf <strong>fyrst</strong>: P = (<var>x</var>, <var>y</var>). Punkturinn (3, −2) er því 3 til hægri og 2 niður.</li>
+          <li>Punktur á <var>x</var>-ásnum hefur <var>y</var> = 0 og punktur á <var>y</var>-ásnum hefur <var>x</var> = 0.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot">
+      <span id="footstat"></span>
+      <button class="linky" id="reset" type="button">Hreinsa mína stöðu</button>
+    </div>
+  </div>
+
+  <footer class="sitefoot">
+    <p><span class="who">Gyða</span> stærðfræðikennari við FÁ</p>
+  </footer>
+</div>
+
+<script>
+/* Dæmavél: lesa hnit punkts – Lota 7 Hnitakerfi */
+const Eng = (() => {
+  const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const nz = (a, b) => { let v; do { v = ri(a, b); } while (v === 0); return v; };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const num = n => (n < 0 ? '−' + Math.abs(n) : String(n));
+  const ptT = (x, y) => '(' + num(x) + ', ' + num(y) + ')';
+
+  const G = {};
+  G[1] = () => ({ x: ri(1, 7), y: ri(1, 7), s: 1 });                       // jákvæð hnit
+  G[2] = () => { let x, y; do { x = nz(-7, 7); y = nz(-7, 7); } while (x > 0 && y > 0); return { x, y, s: 1 }; }; // neikvæð hnit
+  G[3] = () => {                                                            // á ásunum
+    if (Math.random() < 0.08) return { x: 0, y: 0, s: 1 };
+    const v = nz(-7, 7); return Math.random() < 0.5 ? { x: v, y: 0, s: 1 } : { x: 0, y: v, s: 1 };
+  };
+  G[4] = () => { const s = pick([2, 2, 5]); return { x: s * nz(-7, 7), y: s * ri(-7, 7), s }; }; // annar kvarði
+
+  const keyOf = p => [p.x, p.y, p.s].join('|');
+  function generate(kind, avoid) {
+    for (let i = 0; i < 1000; i++) {
+      const p = G[kind]();
+      if (kind === 4 && p.y === 0 && Math.random() < 0.7) continue;
+      const k = keyOf(p); if (avoid && k === avoid) continue;
+      p.key = k; p.kind = kind; return p;
+    }
+    throw new Error('Tókst ekki að búa til dæmi');
+  }
+
+  // Hnitakerfi –8..8 strik; guide: 0 engar, 1 lóðrétt hjálparlína að x-ás, 2 líka lárétt að y-ás
+  let plotN = 0;
+  function plotH(p, guide = 0, showVals = false) {
+    plotN++;
+    const R = 8, s = p.s, u = 25, pad = 22, W = 2 * R * u + 2 * pad;
+    const X = v => pad + (v / s + R) * u, Y = v => pad + (R - v / s) * u;
+    let h = '<div class="plot"><svg viewBox="0 0 ' + W + ' ' + W + '" role="img" aria-label="Punktur P í hnitakerfi">';
+    for (let k = -R; k <= R; k++) {
+      h += '<line class="pl-grid" x1="' + X(k * s) + '" y1="' + Y(-R * s) + '" x2="' + X(k * s) + '" y2="' + Y(R * s) + '"/>';
+      h += '<line class="pl-grid" x1="' + X(-R * s) + '" y1="' + Y(k * s) + '" x2="' + X(R * s) + '" y2="' + Y(k * s) + '"/>';
+    }
+    const e = R * s;
+    h += '<line class="pl-ax" x1="' + (X(-e) - 8) + '" y1="' + Y(0) + '" x2="' + (X(e) + 8) + '" y2="' + Y(0) + '"/>';
+    h += '<line class="pl-ax" x1="' + X(0) + '" y1="' + (Y(-e) + 8) + '" x2="' + X(0) + '" y2="' + (Y(e) - 8) + '"/>';
+    const ax = X(e) + 14, ay = Y(e) - 14;
+    h += '<path class="pl-arr" d="M' + ax + ' ' + Y(0) + ' l-9 -4.5 v9 z"/><path class="pl-arr" d="M' + X(0) + ' ' + ay + ' l-4.5 9 h9 z"/>';
+    h += '<text class="pl-lab" x="' + (ax - 2) + '" y="' + (Y(0) + 18) + '" text-anchor="end">x</text>';
+    h += '<text class="pl-lab" x="' + (X(0) - 10) + '" y="' + (ay + 8) + '" text-anchor="end">y</text>';
+    for (let k = -R + 1; k < R; k++) {
+      if (k === 0) continue;
+      const v = k * s;
+      h += '<line class="pl-ax" x1="' + X(v) + '" y1="' + (Y(0) - 3) + '" x2="' + X(v) + '" y2="' + (Y(0) + 3) + '"/>';
+      h += '<line class="pl-ax" x1="' + (X(0) - 3) + '" y1="' + Y(v) + '" x2="' + (X(0) + 3) + '" y2="' + Y(v) + '"/>';
+      h += '<text class="pl-t" x="' + X(v) + '" y="' + (Y(0) + 14) + '" text-anchor="middle">' + num(v) + '</text>';
+      h += '<text class="pl-t" x="' + (X(0) - 6) + '" y="' + (Y(v) + 3.5) + '" text-anchor="end">' + num(v) + '</text>';
+    }
+    h += '<text class="pl-o" x="' + (X(0) - 6) + '" y="' + (Y(0) + 14) + '" text-anchor="end">0</text>';
+    if (guide >= 1 && p.y !== 0) {
+      h += '<line class="pl-gd" x1="' + X(p.x) + '" y1="' + Y(p.y) + '" x2="' + X(p.x) + '" y2="' + Y(0) + '"/>';
+    }
+    if (guide >= 1 && showVals && p.x !== 0) h += '<text class="pl-hl" x="' + X(p.x) + '" y="' + (Y(0) + (p.y >= 0 ? 28 : -10)) + '" text-anchor="middle">x = ' + num(p.x) + '</text>';
+    if (guide >= 2 && p.x !== 0) {
+      h += '<line class="pl-gd" x1="' + X(p.x) + '" y1="' + Y(p.y) + '" x2="' + X(0) + '" y2="' + Y(p.y) + '"/>';
+    }
+    if (guide >= 2 && showVals && p.y !== 0) h += '<text class="pl-hl" x="' + (X(0) + (p.x >= 0 ? -24 : 24)) + '" y="' + (Y(p.y) - 6) + '" text-anchor="' + (p.x >= 0 ? 'end' : 'start') + '">y = ' + num(p.y) + '</text>';
+    h += '<circle class="pl-pt" cx="' + X(p.x) + '" cy="' + Y(p.y) + '" r="5.5"/>';
+    const right = p.x >= 0 ? 1 : -1;
+    h += '<text class="pl-ptl" x="' + (X(p.x) + 9 * right) + '" y="' + (Y(p.y) - 8) + '" text-anchor="' + (right > 0 ? 'start' : 'end') + '">P</text>';
+    return h + '</svg></div>';
+  }
+
+  // Svar: heiltala; leyfir líka "(3, -2)" eða "3,-2" í fyrri reitnum
+  function parseInt1(s) {
+    s = String(s).replace(/\s+/g, '').replace(/[−–]/g, '-');
+    if (!/^-?\d+$/.test(s)) return null;
+    return parseInt(s, 10);
+  }
+  function parsePair(s) {
+    s = String(s).replace(/\s+/g, '').replace(/[−–]/g, '-').replace(/^p=/i, '');
+    const m = s.match(/^\(?(-?\d+)[,;](-?\d+)\)?$/);
+    return m ? [parseInt(m[1], 10), parseInt(m[2], 10)] : null;
+  }
+
+  return { generate, plotH, parseInt1, parsePair, num, ptT, pick, G };
+})();
+if (typeof module !== 'undefined') module.exports = Eng;
+</script>
+<script>
+"use strict";
+var E=Eng;
+var LEVELS=[
+ {nm:"Jákvæð hnit",ex:"P = (3, 5)",k:1},
+ {nm:"Neikvæð hnit",ex:"P = (−4, 2) eða (3, −6)",k:2},
+ {nm:"Punktar á ásunum",ex:"P = (0, −3) eða (5, 0)",k:3},
+ {nm:"Annar kvarði",ex:"Hvert strik er 2 eða 5: P = (10, −4)",k:4},
+ {nm:"Blandað",ex:"P = (−2, −7)",k:0}
+];
+/* Blandað og fimihluti: flest með neikvæðum hnitum, nokkur á ásunum */
+var MIX=[0,0,1,1,1,1,2,2,3];
+function genLevel(i,avoid){
+  if(LEVELS[i].k===0){var j=E.pick(MIX);var p=E.generate(LEVELS[j].k,avoid);p.lv=j;return p}
+  var q=E.generate(LEVELS[i].k,avoid);q.lv=i;return q;
+}
+var GOAL=10;
+
+/* ---------------- staða nemandans ---------------- */
+var KEY="hnit-v1";
+var store={lvl:0,mode:"drill",stats:{}};
+try{
+  var raw=localStorage.getItem(KEY);
+  if(raw){var pp=JSON.parse(raw);if(pp&&typeof pp==="object"){store.lvl=pp.lvl|0;if(pp.stats&&typeof pp.stats==="object")store.stats=pp.stats}}
+}catch(e){}
+function saveStore(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+function stat(i){
+  if(!store.stats[i])store.stats[i]={best:0,done:false,tries:0,right:0};
+  var s=store.stats[i];
+  ["best","tries","right"].forEach(function(k){if(typeof s[k]!=="number")s[k]=0});
+  return s;
+}
+function curStat(){return stat(mode==="drill"?"drill":lvl)}
+
+/* ---------------- viðmót ---------------- */
+function $(id){return document.getElementById(id)}
+var lvl=Math.min(Math.max(store.lvl|0,0),LEVELS.length-1);
+var mode="drill";   /* síðan opnast alltaf í fimihluta */
+var prob=null,streak=0,shownAt=0,times=[],answered=false,lastKey=null,lastInput=null;
+var clean=true,hintN=0;
+
+var sel=$("levelsel");
+LEVELS.forEach(function(L,i){
+  var o=document.createElement("option");
+  o.value=i;o.textContent="Stig "+(i+1)+" · "+L.nm;
+  sel.appendChild(o);
+});
+
+function setMode(m){
+  mode=m;store.mode=m;saveStore();
+  $("mode-learn").setAttribute("aria-pressed",m==="learn"?"true":"false");
+  $("mode-drill").setAttribute("aria-pressed",m==="drill"?"true":"false");
+  $("modenote").textContent = m==="learn"
+    ? "Æfingahluti: vísbendingar teikna hjálparlínur að ásunum og sama dæmið bíður þar til það er rétt."
+    : "Fimihluti: allar tegundir blandaðar, eins og á prófi. "+GOAL+" rétt í röð til að ná tökum á efninu. Eitt rangt svar setur röðina í núll.";
+  $("levelsel").hidden=(m==="drill");
+  $("themap").hidden=(m==="drill");
+  streak=0;times=[];
+  newProblem();
+}
+function setLevel(i){
+  lvl=i;store.lvl=i;saveStore();
+  sel.value=i;streak=0;times=[];
+  newProblem();
+}
+
+function drawMeter(){
+  var st=curStat(),d=$("dots"),i;
+  d.innerHTML="";
+  for(i=0;i<GOAL;i++){
+    var sp=document.createElement("span");
+    sp.className="dot"+(i<Math.min(streak,GOAL)?" on":"");
+    d.appendChild(sp);
+  }
+  if(mode==="drill"){
+    $("meterlabel").textContent="Rétt í röð — "+Math.min(streak,GOAL)+" af "+GOAL;
+    var avg=times.length?(times.reduce(function(a,b){return a+b},0)/times.length/1000):0;
+    $("meterstat").textContent="Best: "+st.best+(times.length>1?" · "+avg.toFixed(1).replace(".",",")+" s á dæmi":"")+(st.done?" · náð":"");
+  }else{
+    $("meterlabel").textContent="Æfing — villulaust í röð "+Math.min(streak,GOAL);
+    $("meterstat").textContent=st.right+" villulaus af "+st.tries+" á þessu stigi";
+  }
+}
+
+function drawPlot(guide,vals){$("problem").innerHTML=E.plotH(prob,guide||0,!!vals)}
+function newProblem(){
+  prob=(mode==="drill")?genLevel(4,lastKey):genLevel(lvl,lastKey);
+  lastKey=prob.key;
+  answered=false;clean=true;hintN=0;
+  $("lvlname").textContent=(mode==="drill")
+    ? "Fimihluti · blandað, eins og á prófi"
+    : "Stig "+(lvl+1)+" · "+LEVELS[lvl].nm;
+  $("prompt").textContent="Hver eru hnit punktsins P?"+(prob.s!==1?" Athugaðu kvarðann á ásunum.":"");
+  drawPlot(0);
+  $("fb").hidden=true;$("fb").innerHTML="";
+  renderStage();
+  drawMeter();renderLevels();
+  shownAt=Date.now();
+}
+
+/* ---------- innsláttur: P = ( x , y ) ---------- */
+function inp(id,ph,lab){
+  return '<input type="text" id="'+id+'" class="crd" placeholder="'+ph+'" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="'+lab+'">';
+}
+function renderStage(){
+  var r=$("answerrow"),h="";
+  if(!answered){
+    h='<span class="xlab"><var>P</var> = (</span>'+inp("in1","x","x-hnit")+'<span class="xlab">,</span>'+inp("in2","y","y-hnit")+'<span class="xlab">)</span>'+
+      '<button class="btn" id="submit" type="button">Athuga</button>';
+    $("keys").hidden=false;
+  }else $("keys").hidden=true;
+  r.innerHTML=h;
+  if($("submit"))$("submit").onclick=submit;
+  var i1=$("in1"),i2=$("in2");
+  [i1,i2].forEach(function(el){if(el)el.addEventListener("focus",function(){lastInput=el})});
+  if(i1)i1.addEventListener("keydown",function(e){
+    if(e.key==="Enter"){e.preventDefault();if(i2&&!i2.value&&!E.parsePair(i1.value))i2.focus();else submit()}
+    else if(e.key===","&&i1.value.trim()&&!/[(,]/.test(i1.value)){e.preventDefault();i2.focus()}
+  });
+  if(i2)i2.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();submit()}});
+  lastInput=i1;
+  if(i1)i1.focus();
+  renderActions();
+}
+
+function renderActions(){
+  var a=$("actions");a.innerHTML="";
+  function add(txt,cls,fn){
+    var b=document.createElement("button");
+    b.type="button";b.className="btn "+cls;b.textContent=txt;b.onclick=fn;
+    a.appendChild(b);return b;
+  }
+  if(answered){add("Næsta dæmi","",newProblem);return}
+  if(mode==="learn"){
+    add("Vísbending","ghost",hint);
+    add("Sýna lausn","ghost",showSolution);
+  }else{
+    add("Sleppa þessu","ghost",function(){failDrill("<p><strong>Þú slepptir dæminu.</strong></p>")});
+  }
+}
+
+function fbox(cls,html){var f=$("fb");f.className="fb "+cls;f.innerHTML=html;f.hidden=false}
+function ansT(){return '<span class="mth"><var>P</var> = '+E.ptT(prob.x,prob.y)+'</span>'}
+function scaleNote(){return prob.s!==1?'<p>Athugaðu kvarðann: hvert strik á ásunum er <strong>'+prob.s+'</strong>, ekki 1.</p>':''}
+
+/* lýsing á lausninni í orðum */
+function explain(){
+  var p=prob,t=[];
+  if(p.x===0&&p.y===0)return '<p>Punkturinn er í upphafspunktinum, þar sem ásarnir skerast. Bæði hnitin eru 0.</p>';
+  if(p.x===0)t.push('Punkturinn er á <var>y</var>-ásnum, svo <var>x</var> = 0.');
+  else t.push('Frá upphafspunktinum er punkturinn '+Math.abs(p.x)+' '+(p.x>0?'til hægri':'til vinstri')+', svo <var>x</var> = '+E.num(p.x)+'.');
+  if(p.y===0)t.push('Punkturinn er á <var>x</var>-ásnum, svo <var>y</var> = 0.');
+  else t.push('Hann er '+Math.abs(p.y)+' '+(p.y>0?'upp':'niður')+', svo <var>y</var> = '+E.num(p.y)+'.');
+  return '<p>'+t.join(' ')+'</p>';
+}
+
+/* ---------- vísbendingar ---------- */
+function hint(){
+  hintN=Math.min(hintN+1,3);
+  var h='<p class="lbl">Vísbending '+hintN+' af 3</p>';
+  if(hintN===1){
+    h+='<p>Byrjaðu í upphafspunktinum (0, 0). <var>x</var>-hnitið segir hve langt til hægri (+) eða vinstri (−) punkturinn er og <var>y</var>-hnitið hve langt upp (+) eða niður (−). Skrifaðu <var>x</var> fyrst.</p>'+scaleNote();
+    drawPlot(0);
+  }else if(hintN===2){
+    h+=(prob.y===0?'<p>Punkturinn liggur á <var>x</var>-ásnum. Lestu <var>x</var>-hnitið beint af ásnum.</p>':'<p>Fylgdu strikalínunni frá P '+(prob.y>0?'niður':'upp')+' á <var>x</var>-ásinn. Talan sem hún lendir á er <var>x</var>-hnitið.</p>')+scaleNote();
+    drawPlot(1);
+  }else{
+    h+=(prob.x===0?'<p>Punkturinn liggur á <var>y</var>-ásnum, svo <var>x</var> = 0. Lestu <var>y</var>-hnitið beint af ásnum.</p>':'<p>Fylgdu nú hinni strikalínunni frá P '+(prob.x>0?'til vinstri':'til hægri')+' á <var>y</var>-ásinn. Talan sem hún lendir á er <var>y</var>-hnitið.</p>')+scaleNote();
+    drawPlot(2);
+  }
+  fbox("neutral",h);
+  if(lastInput)lastInput.focus();
+}
+
+function showSolution(){
+  clean=false;
+  finish(false);
+  drawPlot(2,true);
+  fbox("neutral",'<p class="lbl">Lausn</p>'+explain()+'<p class="big">'+ansT()+'</p>');
+}
+
+/* ---------- mat á svari ---------- */
+function readAnswer(){
+  var a=$("in1").value,b=$("in2").value,pr=E.parsePair(a);
+  if(pr&&!b.trim())return pr;
+  var x=E.parseInt1(a),y=E.parseInt1(b);
+  if(x===null||y===null)return null;
+  return [x,y];
+}
+function whyWrong(x,y){
+  var p=prob,m=[];
+  if(x===p.y&&y===p.x&&p.x!==p.y)return '<p>Þú víxlaðir hnitunum. <var>x</var>-hnitið (lárétt, til hægri eða vinstri) kemur <strong>fyrst</strong>, svo <var>y</var>-hnitið (lóðrétt, upp eða niður).</p>';
+  if(x!==p.x){
+    if(x===-p.x)m.push('<var>x</var>-hnitið er með rangt formerki: punkturinn er '+(p.x<0?'<strong>vinstra megin</strong> við <var>y</var>-ásinn, svo <var>x</var> er neikvætt.':'<strong>hægra megin</strong> við <var>y</var>-ásinn, svo <var>x</var> er jákvætt.'));
+    else if(p.s!==1&&x*p.s===p.x)m.push('Þú taldir strikin í <var>x</var>-stefnu en hvert strik er '+p.s+'.');
+    else m.push('<var>x</var>-hnitið er ekki rétt.');
+  }
+  if(y!==p.y){
+    if(y===-p.y)m.push('<var>y</var>-hnitið er með rangt formerki: punkturinn er '+(p.y<0?'<strong>fyrir neðan</strong> <var>x</var>-ásinn, svo <var>y</var> er neikvætt.':'<strong>fyrir ofan</strong> <var>x</var>-ásinn, svo <var>y</var> er jákvætt.'));
+    else if(p.s!==1&&y*p.s===p.y)m.push('Þú taldir strikin í <var>y</var>-stefnu en hvert strik er '+p.s+'.');
+    else m.push('<var>y</var>-hnitið er ekki rétt.');
+  }
+  return '<p>'+m.join(' ')+'</p>';
+}
+
+function badInput(){
+  var a=$("in1").value.trim(),b=$("in2").value.trim();
+  fbox("bad",'<p><strong>'+((a||b)?"Ég skil ekki svarið.":"Skrifaðu svar.")+'</strong> Skrifaðu heiltölu í hvorn reit, t.d. <span class="mth">3</span> og <span class="mth">−2</span>.</p>');
+  ($("in1").value.trim()?$("in2"):$("in1")).focus();
+}
+
+function learnSubmit(){
+  var v=readAnswer();
+  if(!v){badInput();return}
+  if(v[0]===prob.x&&v[1]===prob.y){finish(true);return}
+  clean=false;
+  fbox("bad",'<p><strong>Ekki rétt.</strong> Þú skrifaðir <span class="mth">'+E.ptT(v[0],v[1])+'</span>.</p>'+whyWrong(v[0],v[1])+'<p>Reyndu aftur — eða biddu um vísbendingu.</p>');
+}
+
+function finish(solved){
+  var st=curStat();
+  st.tries++;
+  if(solved&&clean){st.right++;streak++}else streak=0;
+  saveStore();
+  answered=true;
+  if(solved){
+    drawPlot(2,true);
+    fbox("good",'<p><strong>'+(clean?"Rétt — og villulaust.":"Rétt.")+'</strong> '+ansT()+'</p>'+explain());
+  }
+  renderStage();drawMeter();renderLevels();
+  if(solved&&$("actions").firstChild)$("actions").firstChild.focus();
+}
+
+/* ---------- fimihluti ---------- */
+function drillSubmit(){
+  var v=readAnswer();
+  if(!v){badInput();return}
+  if(v[0]===prob.x&&v[1]===prob.y){succeedDrill();return}
+  failDrill('<p><strong>Ekki rétt.</strong> Þú skrifaðir <span class="mth">'+E.ptT(v[0],v[1])+'</span>.</p>'+whyWrong(v[0],v[1]));
+}
+function succeedDrill(){
+  var st=curStat();
+  st.tries++;st.right++;streak++;
+  times.push(Date.now()-shownAt);
+  var extra="";
+  if(streak>st.best)st.best=streak;
+  if(streak>=GOAL&&!st.done){st.done=true;extra="<p><strong>"+GOAL+" rétt í röð — þú hefur náð tökum á efninu.</strong></p>"}
+  else if(streak>=GOAL)extra="<p>"+streak+" rétt í röð.</p>";
+  saveStore();
+  answered=true;
+  fbox("good",'<p><strong>Rétt.</strong> '+ansT()+'</p>'+extra);
+  renderStage();drawMeter();renderLevels();
+  if($("actions").firstChild)$("actions").firstChild.focus();
+}
+function failDrill(msgHtml){
+  var st=curStat();st.tries++;
+  var broke=streak>0;
+  streak=0;times=[];
+  saveStore();
+  answered=true;
+  drawPlot(2,true);
+  fbox("bad",msgHtml+(broke?"<p><strong>Röðin fór í núll.</strong> Byrjaðu upp á nýtt.</p>":"")+'<p class="lbl">Lausn</p>'+explain()+'<p class="big">'+ansT()+'</p>');
+  renderStage();drawMeter();renderLevels();
+  var lv=prob.lv;
+  var b=document.createElement("button");
+  b.type="button";b.className="btn ghost";b.textContent="Æfa þessa tegund";
+  b.onclick=function(){setMode("learn");if(typeof lv==="number")setLevel(lv)};
+  $("actions").appendChild(b);
+}
+
+function submit(){
+  if(answered){newProblem();return}
+  if(mode==="drill")drillSubmit();else learnSubmit();
+}
+
+function renderLevels(){
+  var ul=$("levels");ul.innerHTML="";
+  LEVELS.forEach(function(L,i){
+    var st=stat(i),li=document.createElement("li"),b=document.createElement("button");
+    b.type="button";b.className="lvl";
+    b.dataset.cur=(i===lvl&&mode==="learn")?"1":"0";
+    b.dataset.done="0";
+    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="txt"><span class="nm">'+L.nm+
+      '</span><br><span class="ex">'+L.ex+'</span></span><span class="st">'+
+      (st.tries?st.right+" villulaus af "+st.tries:"—")+"</span>";
+    b.onclick=function(){if(mode!=="learn")setMode("learn");setLevel(i)};
+    li.appendChild(b);ul.appendChild(li);
+  });
+  var d=stat("drill");
+  $("footstat").textContent=d.done
+    ? "Fimihluti: "+GOAL+" rétt í röð — náð."
+    : "Fimihluti: best "+d.best+" rétt í röð af "+GOAL+".";
+}
+
+/* ---------------- tengingar ---------------- */
+$("mode-learn").onclick=function(){setMode("learn")};
+$("mode-drill").onclick=function(){setMode("drill")};
+sel.onchange=function(){setLevel(+sel.value)};
+Array.prototype.forEach.call(document.querySelectorAll(".keys button"),function(b){
+  b.addEventListener("mousedown",function(e){e.preventDefault()});
+  b.onclick=function(){
+    var inp=lastInput||$("in1");if(!inp)return;
+    var a=(inp.selectionStart==null)?inp.value.length:inp.selectionStart;
+    var z=(inp.selectionEnd==null)?a:inp.selectionEnd;
+    inp.value=inp.value.slice(0,a)+b.dataset.ins+inp.value.slice(z);
+    inp.focus();
+    try{inp.selectionStart=inp.selectionEnd=a+b.dataset.ins.length}catch(e){}
+  };
+});
+$("reset").onclick=function(){store.stats={};saveStore();streak=0;times=[];drawMeter();renderLevels()};
+$("themebtn").onclick=function(){
+  var r=document.documentElement;
+  var isDark=r.getAttribute("data-theme")==="dark"||
+    (!r.getAttribute("data-theme")&&window.matchMedia&&matchMedia("(prefers-color-scheme:dark)").matches);
+  r.setAttribute("data-theme",isDark?"light":"dark");
+};
+sel.value=lvl;
+setMode(mode);
+</script>
+
+</body>
+</html>
