@@ -310,18 +310,26 @@ function t1(){
       steps:linSteps(a,b,c,d,x)};
   }
 }
-/* 2. ax + L = c(x + d) */
+/* 2. c(x + d) + e + fx = gx + h  – margfalda inn í sviga, draga saman líka liði */
+function opT(c,v){var a=Math.abs(c);return '<span class="op">'+(c<0?"&minus;":"+")+"</span>"+(v?((a===1?"":a)+V(v)):a)}
 function t2(){
   for(;;){
-    var x=xr(4,10),a=ri(3,9),c=ri(2,5),d=nz(-6,6);
-    if(a===c)continue;
-    var L=(c-a)*x+c*d;
-    if(L===0||Math.abs(L)>30)continue;
+    var x=xr(4,10),c=ri(2,5),d=nz(-6,6),e=nz(-9,9),f=nz(-6,6),A=c+f;
+    if(A<=0)continue;                                     /* x-liðir mega ekki eyðast út */
+    var g=Math.random()<.5?0:ri(1,6);
+    if(A===g)continue;
+    var B=c*d+e,h=(A-g)*x+B;
+    if(h===0||Math.abs(h)>45||B===0)continue;
+    var fx=Math.random()<.5;                              /* röð aukaliðanna */
+    var lhsH=c+"("+lin(1,d)+")"+(fx?opT(f,"x")+opT(e,null):opT(e,null)+opT(f,"x"));
+    var rhsH=g?lin(g,h):N(h);
+    var expd=fx?ex([[c,"x"],[c*d,null],[f,"x"],[e,null]]):ex([[c,"x"],[c*d,null],[e,null],[f,"x"]]);
     return{cat:"einf",sol:x,
-      q:lin(a,L)+" = "+c+"("+lin(1,d)+")",
-      lhs:function(t){return a*t+L},rhs:function(t){return c*(t+d)},
-      steps:[lin(a,L)+" = "+lin(c,c*d)+' <span class="note">margfalda inn í svigann</span>']
-            .concat(linSteps(a,L,c,c*d,x))};
+      q:lhsH+" = "+rhsH,
+      lhs:function(t){return c*(t+d)+e+f*t},rhs:function(t){return g*t+h},
+      steps:[expd+" = "+rhsH+' <span class="note">margfalda inn í svigann</span>',
+             lin(A,B)+" = "+rhsH+' <span class="note">draga saman líka liði</span>']
+            .concat(linSteps(A,B,g,h,x))};
   }
 }
 /* 3. p/q = (x + r)/n */
