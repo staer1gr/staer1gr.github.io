@@ -224,7 +224,7 @@ sub{font-size:.62em; line-height:0; vertical-align:-.25em; font-style:normal}
       <p class="mapnote">Í æfingahlutanum reiknarðu hvert dæmi í þremur skrefum: breytinguna á y, breytinguna á x og svo hallatöluna. Fimihlutinn hefur eitt stig: allar tegundir blandaðar, eins og á prófi.</p>
       <ul class="levels" id="levels"></ul>
       <div class="tipbox"><strong>Hallatala línu gegnum A = (<var>x</var><sub>A</sub>, <var>y</var><sub>A</sub>) og B = (<var>x</var><sub>B</sub>, <var>y</var><sub>B</sub>):</strong>
-        <span class="fm"><var>a</var> = <span class="frac"><span class="nu">Δ<var>y</var></span><span class="de">Δ<var>x</var></span></span> = <span class="frac"><span class="nu"><var>y</var><sub>B</sub> − <var>y</var><sub>A</sub></span><span class="de"><var>x</var><sub>B</sub> − <var>x</var><sub>A</sub></span></span></span>
+        <span class="fm"><var>h</var> = <span class="frac"><span class="nu">Δ<var>y</var></span><span class="de">Δ<var>x</var></span></span> = <span class="frac"><span class="nu"><var>y</var><sub>B</sub> − <var>y</var><sub>A</sub></span><span class="de"><var>x</var><sub>B</sub> − <var>x</var><sub>A</sub></span></span></span>
         <ul>
           <li>Δ (delta) þýðir <em>breyting</em>. Breytingin á <var>y</var> fer <em>fyrir ofan</em> strikið, breytingin á <var>x</var> fyrir neðan.</li>
           <li>Dragðu í <em>sömu röð</em> uppi og niðri — B mínus A í báðum. Settu sviga utan um neikvæðar tölur: 3 − (−4) = 3 + 4.</li>
@@ -275,7 +275,7 @@ const Eng = (() => {
     return D(c) + ' = ' + V(c, 'B') + ' − ' + V(c, 'A') + ' = ' + diffSteps(b, a).join(' = ') + ' = ' + num(b - a);
   }
   function slopeLine(p) {
-    let h = '<var>a</var> = ' + frac(D('y'), D('x')) + ' = ' + frac(num(p.dy), num(p.dx));
+    let h = '<var>h</var> = ' + frac(D('y'), D('x')) + ' = ' + frac(num(p.dy), num(p.dx));
     if (p.dx === 0) return h + ' &nbsp;→ deilt með 0';
     const g = gcd(p.dy, p.dx);
     if (p.dy === 0) h += ' = 0';
@@ -292,7 +292,7 @@ const Eng = (() => {
   }
   const UND = /^(ó|o)skilgr|^ekki|^engin|^undef|^∞|^óendanl|^oendanl/;
   function parseAns(s) {
-    s = String(s).toLowerCase().replace(/\s+/g, '').replace(/^a=/, '').replace(/[−–]/g, '-').replace(/,/g, '.');
+    s = String(s).toLowerCase().replace(/\s+/g, '').replace(/^[ah]=/, '').replace(/[−–]/g, '-').replace(/,/g, '.');
     if (!s) return null;
     if (UND.test(s)) return { und: true };
     let m = s.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);
@@ -413,7 +413,7 @@ function genLevel(i,avoid){
   var q=E.generate(LEVELS[i].k,avoid);q.lv=i;return q;
 }
 var GOAL=10;
-var YA=E.V("y","A"),YB=E.V("y","B"),XA=E.V("x","A"),XB=E.V("x","B"),DY=E.D("y"),DX=E.D("x"),AV="<var>a</var>";
+var YA=E.V("y","A"),YB=E.V("y","B"),XA=E.V("x","A"),XB=E.V("x","B"),DY=E.D("y"),DX=E.D("x"),AV="<var>h</var>";
 
 /* ---------------- staða nemandans ---------------- */
 var KEY="hallatala-v1";
