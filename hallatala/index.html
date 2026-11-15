@@ -162,15 +162,15 @@ sub{font-size:.62em; line-height:0; vertical-align:-.25em; font-style:normal}
 .tipbox .fm{font-family:var(--font-math); font-size:1.15rem; color:var(--ink); display:block; margin:.35rem 0}
 /* hnitakerfismynd í lausn */
 .plot{margin:.6rem 0 .2rem}
-.plot svg{display:block; width:100%; max-width:360px; height:auto}
+.plot svg{display:block; max-width:100%; height:auto}
 .pl-grid{stroke:var(--line); stroke-width:1}
 .pl-ax{stroke:var(--muted); stroke-width:1.5}
 .pl-line{stroke:var(--accent); stroke-width:2.2}
 .pl-leg{stroke:var(--streak); stroke-width:2; stroke-dasharray:5 4}
 .pl-pt{fill:var(--ink)}
 .pl-t{fill:var(--muted); font-family:var(--font-body); font-size:10px}
-.pl-lab{fill:var(--ink); font-family:var(--font-math); font-size:15px; font-style:italic}
-.pl-d{fill:var(--streak); font-family:var(--font-math); font-size:13px; font-weight:600}
+.pl-lab{fill:var(--ink); font-family:var(--font-math); font-size:15px; font-style:italic; paint-order:stroke; stroke:var(--paper); stroke-width:4px; stroke-linejoin:round}
+.pl-d{fill:var(--streak); font-family:var(--font-math); font-size:13px; font-weight:600; paint-order:stroke; stroke:var(--paper); stroke-width:4px; stroke-linejoin:round}
 </style>
 </head>
 <body>
@@ -361,7 +361,7 @@ const Eng = (() => {
     const W = (x1 - x0) * u + 2 * px, H = (y1 - y0) * u + 2 * pad;
     const X = x => px + (x - x0) * u, Y = y => pad + (y1 - y) * u;
     const lab = Math.round((x1 - x0) / st) > 12 || Math.round((y1 - y0) / st) > 12 ? 2 * st : st;
-    let s = '<svg viewBox="0 0 ' + W.toFixed(1) + ' ' + H.toFixed(1) + '" role="img" aria-label="Punktarnir A og B í hnitakerfi">';
+    let s = '<svg width="' + W.toFixed(0) + '" height="' + H.toFixed(0) + '" viewBox="0 0 ' + W.toFixed(1) + ' ' + H.toFixed(1) + '" role="img" aria-label="Punktarnir A og B í hnitakerfi">';
     s += '<defs><clipPath id="' + cid + '"><rect x="' + px + '" y="' + pad + '" width="' + (W - 2 * px).toFixed(1) + '" height="' + (H - 2 * pad).toFixed(1) + '"/></clipPath></defs>';
     for (let x = x0; x <= x1; x += st) s += '<line class="pl-grid" x1="' + X(x) + '" y1="' + Y(y0) + '" x2="' + X(x) + '" y2="' + Y(y1) + '"/>';
     for (let y = y0; y <= y1; y += st) s += '<line class="pl-grid" x1="' + X(x0) + '" y1="' + Y(y) + '" x2="' + X(x1) + '" y2="' + Y(y) + '"/>';
@@ -385,9 +385,11 @@ const Eng = (() => {
       const right = p.dx > 0;
       s += '<text class="pl-d" x="' + (X(cx) + (right ? 6 : -6)) + '" y="' + ((Y(cy) + Y(p.B[1])) / 2 + 4) + '" text-anchor="' + (right ? 'start' : 'end') + '">Δy = ' + num(p.dy) + '</text>';
     }
-    [['A', p.A], ['B', p.B]].forEach(([L, P]) => {
+    // merki punktanna snúa frá hvort öðru (A vinstra megin ef B er hægra megin)
+    [['A', p.A, p.dx > 0 ? -1 : 1], ['B', p.B, p.dx > 0 ? 1 : -1]].forEach(([L, P, sd]) => {
+      if (p.dx === 0) sd = 1;
       s += '<circle class="pl-pt" cx="' + X(P[0]) + '" cy="' + Y(P[1]) + '" r="4"/>';
-      s += '<text class="pl-lab" x="' + (X(P[0]) + 7) + '" y="' + (Y(P[1]) - 7) + '">' + L + '</text>';
+      s += '<text class="pl-lab" x="' + (X(P[0]) + 8 * sd) + '" y="' + (Y(P[1]) + 5) + '" text-anchor="' + (sd > 0 ? 'start' : 'end') + '">' + L + '</text>';
     });
     return '<div class="plot">' + s + '</svg></div>';
   }
