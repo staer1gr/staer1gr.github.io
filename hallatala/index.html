@@ -299,7 +299,7 @@ const Eng = (() => {
     if (m) {
       const a = strF(m[1]), b = strF(m[2]); if (b.n === 0) return { divZero: true };
       const v = F(a.n * b.d, a.d * b.n);
-      if (a.d === 1 && b.d === 1) { v.red = gcd(a.n, b.n) > 1; v.negDen = b.n < 0; } // t.d. 2/8 eða 3/−4
+      if (a.d === 1 && b.d === 1) v.red = gcd(a.n, b.n) > 1; // t.d. 2/8 – mínusinn má vera hvar sem er
       return v;
     }
     if (/^-?\d*\.?\d+$/.test(s)) return strF(s);
@@ -652,7 +652,6 @@ function simpNote(v){
   if(!v||!prob.m)return '';
   var r=' <span class="mth">'+E.valH(prob.m)+'</span>';
   if(v.red)return '<br>Hægt er að stytta brotið:'+r+'.';
-  if(v.negDen)return '<br>Venja er að hafa mínusinn fyrir framan brotið:'+r+'.';
   return '';
 }
 function isRight(v){var p=prob;if(!p.m)return !!v.und;return !v.und&&!v.divZero&&E.eq(v,p.m)}
