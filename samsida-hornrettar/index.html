@@ -683,7 +683,7 @@ function workAdd(lab,html){
 /* ---------- lausn ---------- */
 function lineSol(i){
   var L=prob.L[i],h='<li><strong>Lína '+(i+1)+':</strong> <span class="mth">'+E.eqH(L)+'</span>';
-  var ss=E.steps(L);
+  var ss=L.slope?[]:E.steps(L);
   ss.forEach(function(s){h+='<span class="sub">'+s.t+'</span><span class="se">'+s.e+'</span>'});
   if(!ss.length)h+='<br>';
   if(L.type==="v")h+='Línan er lóðrétt, svo hallatalan er <strong>óskilgreind</strong>.';
@@ -780,6 +780,7 @@ function hWhy(i,r){
   if(!E.isZ(L.h)&&E.eq(v,E.neg(L.h)))return '<p>Formerkið á hallatölu línu '+(i+1)+' er rangt. Mundu að skipta um formerki þegar liður fer yfir á hina hliðina.</p>';
   if(!E.isZ(L.h)&&!E.isZ(v)&&E.eq(v,E.dvd(E.ONE,L.h)))return '<p>Hallatala línu '+(i+1)+' er á hvolfi — þú deildir öfugt.</p>';
   if(L.type==="h")return '<p>Í jöfnu línu '+(i+1)+' er ekkert '+Xv+', svo línan er lárétt.</p>';
+  if(L.slope)return '<p>Hallatala línu '+(i+1)+' er ekki rétt. Hallatalan er talan fyrir framan '+Xv+' í '+Yv+' = <var>h</var>'+Xv+' + <var>k</var>.</p>';
   return '<p>Hallatala línu '+(i+1)+' er ekki rétt. Einangraðu '+Yv+' og lestu töluna fyrir framan '+Xv+'.</p>';
 }
 function relWhy(ch){
