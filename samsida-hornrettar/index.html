@@ -228,7 +228,6 @@ sub{font-size:.62em; line-height:0; vertical-align:-.25em; font-style:normal}
     <div class="keys" id="keys">
       <button type="button" data-ins="−" aria-label="Mínus">&minus;</button>
       <button type="button" data-ins="/" aria-label="Brotastrik">/</button>
-      <button type="button" data-ins="óskilgreind" class="wide" aria-label="Óskilgreind">óskilgreind</button>
       <span class="hint" id="keyhint"></span>
     </div>
     <div class="relbtns" id="relbtns" role="group" aria-label="Afstaða línanna">
@@ -248,12 +247,11 @@ sub{font-size:.62em; line-height:0; vertical-align:-.25em; font-style:normal}
       <ul class="levels" id="levels"></ul>
       <div class="tipbox"><strong>Samsíða eða hornréttar línur</strong>
         <ul>
-          <li>Fyrst þarf að finna hallatölu hvorrar línu. Einangraðu <var>y</var> svo jafnan verði á forminu <var>y</var> = <var>h</var><var>x</var> + <var>k</var>. Hallatalan <var>h</var> er talan fyrir framan <var>x</var>.</li>
+          <li>Fyrst þarf að finna hallatölu hvorrar línu. Í jöfnunni <var>y</var> = <var>h</var><var>x</var> + <var>k</var> er hallatalan <var>h</var> talan fyrir framan <var>x</var>.</li>
           <li><strong>Samsíða</strong> (parallel) línur hafa sömu hallatölu: <span class="fm"><var>h</var><sub>1</sub> = <var>h</var><sub>2</sub></span></li>
           <li><strong>Hornréttar</strong> (perpendicular) línur: margfeldi hallatalnanna er −1. Hallatalan er snúin við og skipt um formerki:
             <span class="fm"><var>h</var><sub>1</sub>·<var>h</var><sub>2</sub> = −1 &nbsp;&nbsp; t.d. 2 og −<span class="frac"><span class="nu">1</span><span class="de">2</span></span> &nbsp; eða &nbsp; <span class="frac"><span class="nu">2</span><span class="de">3</span></span> og −<span class="frac"><span class="nu">3</span><span class="de">2</span></span></span></li>
           <li>Ef hvorugt gildir eru línurnar <strong>hvorugt</strong>. Gættu þín: 2 og −2 eru ekki hornréttar, og 2 og <span class="frac"><span class="nu">1</span><span class="de">2</span></span> ekki heldur.</li>
-          <li><strong>Láréttar og lóðréttar línur:</strong> <var>y</var> = tala er lárétt lína með hallatölu 0. <var>x</var> = tala er lóðrétt lína og hallatala hennar er óskilgreind (undefined). Lárétt og lóðrétt lína eru hornréttar, og tvær lóðréttar línur eru samsíða.</li>
         </ul>
       </div>
     </div>
@@ -414,7 +412,11 @@ const Eng = (() => {
     const h1 = F(nz(-5, 5)), rel = relPick(), h2 = h2For(h1, rel), [k1, k2] = kPair(rel);
     return [layout(mkSlant(h1, k1, 1), 'slope'), layout(mkSlant(h2, k2, 1), 'slope')];
   };
-  G[2] = () => {                       // einangra y
+  G[2] = () => {                       // brot, báðar á forminu y = hx + k
+    const h1 = fracH(), rel = relPick(), h2 = h2For(h1, rel), [k1, k2] = kPair(rel);
+    return [layout(mkSlant(h1, k1, 1), 'slope'), layout(mkSlant(h2, k2, 1), 'slope')];
+  };
+  G[12] = () => {                      // (ekki notað) einangra y
     const h1 = chance(0.8) ? F(nz(-4, 4)) : F(pick([-1, 1]), 2);
     const rel = relPick(), h2 = h2For(h1, rel), [k1, k2] = kPair(rel);
     const st = ['zero', 'split', 'isox', 'zero', 'split'];
@@ -513,14 +515,12 @@ if (typeof module !== 'undefined') module.exports = Eng;
 "use strict";
 var E=Eng;
 var LEVELS=[
- {nm:"Báðar á forminu y = hx + k",ex:"y = 2x + 3 og y = −x − 3",k:1},
- {nm:"Einangra y fyrst",ex:"3 − 2x + 2y = 0 og x = 1 − y",k:2},
- {nm:"Hallatalan er brot",ex:"2x + 3y − 6 = 0 og y = 3/2x + 1",k:3},
- {nm:"Láréttar og lóðréttar línur",ex:"y + 5 = 0 og x = 3",k:4},
+ {nm:"Hallatalan er heiltala",ex:"y = 2x + 3 og y = −x − 3",k:1},
+ {nm:"Hallatalan er brot",ex:"y = 2/3x + 1 og y = −3/2x − 4",k:2},
  {nm:"Blandað",ex:"Allar tegundir, eins og á prófi",k:0}
 ];
 var BL=LEVELS.length-1;
-var MIX=[0,1,1,1,2,2,3];
+var MIX=[0,0,1,1,1];
 var REL={par:"samsíða",perp:"hornréttar",nei:"hvorugt"};
 function genLevel(i,avoid){
   if(LEVELS[i].k===0){var j=E.pick(MIX);var p=E.generate(LEVELS[j].k,avoid);p.lv=j;return p}
@@ -530,7 +530,7 @@ var GOAL=10;
 var Xv=E.X,Yv=E.Y,H1=E.H1,H2=E.H2,HH=[H1,H2];
 
 /* ---------------- staða nemandans ---------------- */
-var KEY="samsida-hornrettar-v1";
+var KEY="samsida-hornrettar-v2";
 var store={lvl:0,mode:"drill",stats:{}};
 try{
   var raw=localStorage.getItem(KEY);
@@ -631,13 +631,13 @@ function renderStage(){
     h='<span class="grp"><span class="xlab">'+H1+' =</span>'+inp("in1","Hallatala línu 1")+'</span>'+
       '<span class="grp"><span class="xlab">'+H2+' =</span>'+inp("in2","Hallatala línu 2")+'</span>';
     showRel=true;showKeys=true;
-    $("keyhint").textContent="Heiltala eða brot. Lóðrétt lína: óskilgreind";
+    $("keyhint").textContent="Heiltala eða brot, t.d. −2 eða 3/4";
   }else if(stage==="h1"||stage==="h2"){
     var i=stage==="h1"?0:1;
     pr="Skref "+(i+1)+" af 3 · Finndu hallatölu línu "+(i+1)+".";
     h='<span class="xlab">'+HH[i]+' =</span>'+inp("in1","Hallatala línu "+(i+1));
     showKeys=true;
-    $("keyhint").textContent="Heiltala eða brot, t.d. −2 eða 3/4. Lóðrétt lína: óskilgreind";
+    $("keyhint").textContent="Heiltala eða brot, t.d. −2 eða 3/4";
   }else{
     pr="Skref 3 af 3 · Eru línurnar samsíða, hornréttar eða hvorugt?";
     showRel=true;
@@ -757,7 +757,7 @@ function showSolution(){
 
 /* ---------- mat á svari ---------- */
 function badInput(raw){
-  fbox("bad",'<p><strong>'+(String(raw).trim()?"Ég skil ekki svarið.":"Skrifaðu svar.")+'</strong> Skrifaðu hallatöluna sem tölu, t.d. <span class="mth">2</span>, <span class="mth">−1</span> eða <span class="mth">3/4</span> — eða „óskilgreind“ ef línan er lóðrétt.</p>');
+  fbox("bad",'<p><strong>'+(String(raw).trim()?"Ég skil ekki svarið.":"Skrifaðu svar.")+'</strong> Skrifaðu hallatöluna sem tölu, t.d. <span class="mth">2</span>, <span class="mth">−1</span> eða <span class="mth">3/4</span>.</p>');
 }
 function xCoef(L){
   if(L.slope)return null;
