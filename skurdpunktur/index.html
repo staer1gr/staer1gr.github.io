@@ -249,11 +249,10 @@ sub{font-size:.62em; line-height:0; vertical-align:-.25em; font-style:normal}
       <div class="tipbox"><strong>Að reikna skurðpunkt tveggja lína</strong>
         <ul>
           <li>Í skurðpunktinum eru báðar línurnar með sama <var>x</var> og sama <var>y</var>. Svarið er punktur (<var>x</var>, <var>y</var>).</li>
-          <li>Komdu báðum jöfnunum á formið <var>y</var> = <var>h</var><var>x</var> + <var>k</var> og <strong>settu hægri hliðarnar jafnar</strong>:
+          <li>Báðar jöfnurnar eru á forminu <var>y</var> = <var>h</var><var>x</var> + <var>k</var>. <strong>Settu hægri hliðarnar jafnar</strong>:
             <span class="fm"><var>x</var> + 2 = 3<var>x</var> &minus; 4 &nbsp;→&nbsp; &minus;2<var>x</var> = &minus;6 &nbsp;→&nbsp; <var>x</var> = 3</span></li>
           <li>Settu <var>x</var> inn í aðra hvora jöfnuna til að finna <var>y</var>: <span class="fm"><var>y</var> = 3 + 2 = 5 &nbsp;&nbsp; skurðpunkturinn er (3, 5)</span></li>
-          <li>Ef <var>x</var> stendur eitt og sér í annarri jöfnunni (t.d. <var>x</var> = 2<var>y</var>) er oft þægilegra að setja það beint inn í hina jöfnuna (innsetningaraðferð, substitution).</li>
-          <li>Lárétt lína <var>y</var> = <var>c</var> gefur <var>y</var> beint og lóðrétt lína <var>x</var> = <var>c</var> gefur <var>x</var> beint.</li>
+          <li>Lárétt lína <var>y</var> = <var>c</var> gefur <var>y</var> beint: settu <var>c</var> = <var>h</var><var>x</var> + <var>k</var> og finndu <var>x</var>.</li>
           <li>Ef línurnar hafa <strong>sömu hallatölu</strong> en ólíkt <var>k</var> eru þær samsíða og <strong>skerast ekki</strong>.</li>
         </ul>
       </div>
@@ -476,46 +475,21 @@ const Eng = (() => {
     const m = pick([1, 1, -1, 2, -2, 3]); const S = scaled(L, m);
     return maxC(S) > 12 ? L : S;
   }
-  G[1] = () => {                       // báðar á forminu y = hx + k, heiltöluskurðpunktur
+  // Allar jöfnur eru á forminu y = hx + k – nemendur þurfa ekki að umrita.
+  G[1] = () => {                       // báðar á forminu y = hx + k, heiltöluskurðpunktur (stundum samsíða)
+    if (chance(0.15)) {
+      const h = SLOPE(), k1 = ri(-8, 8); let k2; do { k2 = ri(-8, 8); } while (k2 === k1);
+      return [layout(mkSlant(h, k1), 'slope'), layout(mkSlant(h, k2), 'slope')];
+    }
     const p = genSlopePair(5, 6, 10);
     return [layout(mkSlant(p.h1, p.k1), 'slope'), layout(mkSlant(p.h2, p.k2), 'slope')];
   };
-  G[2] = () => {                       // lárétt eða lóðrétt lína (eða ás)
+  G[2] = () => {                       // lárétt lína y = c (líka y = 0)
     const x0 = ri(-5, 5), y0 = chance(0.3) ? 0 : ri(-6, 6);
     let h, k; do { h = SLOPE(); k = y0 - h.n * x0; } while (Math.abs(k) > 10);
-    let O = mkSlant(h, k);
-    O = chance(0.25) ? layout(O, Math.abs(O.A) === 1 ? pick(['isox', 'split']) : 'split') : layout(O, 'slope');
-    const c = pick(['h', 'h', 'hz', 'v', 'v']);
-    let S;
-    if (c === 'h') S = layout(mkSlant(Z, y0), 'slope');
-    else if (c === 'hz') S = y0 === 0 ? layout(mkSlant(Z, 0), 'slope') : layout(mult(mkSlant(Z, y0), chance(0.3)), pick(['zero', 'split']));
-    else S = layout(mkVert(x0), 'isox');
-    return [S, O];
+    return [layout(mkSlant(Z, y0), 'slope'), layout(mkSlant(h, k), 'slope')];
   };
-  G[3] = () => {                       // jöfnur á öðru formi
-    const t = Math.random();
-    if (t < 0.22) {                    // samsíða – skerast ekki
-      const h = SLOPE(), k1 = ri(-6, 6); let k2; do { k2 = ri(-6, 6); } while (k2 === k1);
-      const s1 = pick(['zero', 'split', 'isox', 'slope']), s2 = pick(['zero', 'split', 'isox']);
-      return [layout(mult(mkSlant(h, k1), true), s1), layout(mult(mkSlant(h, k2), true), s2)];
-    }
-    if (t < 0.55) {                    // x stendur eitt og sér – innsetning
-      for (;;) {
-        const x0 = ri(-4, 9), y0 = ri(-5, 5);
-        const B1 = nz(-3, 3), A2 = nz(-3, 3), B2 = nz(-3, 3);
-        if (B2 - A2 * B1 === 0) continue;
-        const L1 = mkABC(1, B1, -(x0 + B1 * y0)), L2 = mkABC(A2, B2, -(A2 * x0 + B2 * y0));
-        if (maxC(L1) > 12 || maxC(L2) > 12) continue;
-        if (L1.h.d === 1 && L2.h.d === 1) continue;
-        return [layout(chance(0.5) ? L1 : scaled(L1, -1), pick(['isox', 'isox', 'split', 'zero'])), layout(L2, pick(['zero', 'split', 'split']))];
-      }
-    }
-    const p = genSlopePair(5, 5, 8);   // einangra y, heiltöluhallatölur
-    const st = ['zero', 'split', 'split', 'isox', 'slope'];
-    let s1 = pick(st), s2 = pick(st); if (s1 === 'slope' && s2 === 'slope') s2 = pick(['zero', 'split', 'isox']);
-    return [layout(mult(mkSlant(p.h1, p.k1), true), s1), layout(mult(mkSlant(p.h2, p.k2), true), s2)];
-  };
-  G[4] = () => {                       // svarið er brot
+  G[3] = () => {                       // svarið er brot
     for (;;) {
       const h1 = SLOPE(); let h2; do { h2 = SLOPE(); } while (eq(h1, h2));
       const k1 = ri(-8, 12), k2 = ri(-8, 12);
@@ -611,14 +585,13 @@ if (typeof module !== 'undefined') module.exports = Eng;
 "use strict";
 var E=Eng;
 var LEVELS=[
- {nm:"Báðar á forminu y = hx + k",ex:"y = x og y = −x + 6",k:1},
- {nm:"Lárétt eða lóðrétt lína",ex:"y = 0 og y = 2x + 4",k:2},
- {nm:"Einangra y fyrst",ex:"4 − y = x og x + y + 1 = 0",k:3},
- {nm:"Svarið er brot",ex:"y = −2x + 2 og y = x − 2",k:4},
+ {nm:"Heiltölusvar",ex:"y = x og y = −x + 6",k:1},
+ {nm:"Lárétt lína",ex:"y = 0 og y = 2x + 4",k:2},
+ {nm:"Svarið er brot",ex:"y = −2x + 2 og y = x − 2",k:3},
  {nm:"Blandað",ex:"Allar tegundir, eins og á prófi",k:0}
 ];
 var BL=LEVELS.length-1;
-var MIX=[0,0,0,1,2,2,2,2,3,3];
+var MIX=[0,0,0,0,0,1,2,2];
 function genLevel(i,avoid){
   if(LEVELS[i].k===0){var j=E.pick(MIX);var p=E.generate(LEVELS[j].k,avoid);p.lv=j;return p}
   var q=E.generate(LEVELS[i].k,avoid);q.lv=i;return q;
@@ -763,7 +736,7 @@ function workedSteps(){
 function hintList(){
   var out=[];
   if(prob.method==="sub")out.push('<p>Í skurðpunktinum gilda báðar jöfnurnar. Ef '+Xv+' stendur eitt og sér (stuðullinn 1 eða −1) í annarri jöfnunni, einangraðu '+Xv+' þar og settu inn í hina jöfnuna.</p>');
-  else out.push('<p>Í skurðpunktinum hafa báðar línurnar sama '+Xv+' og sama '+Yv+'. Komdu báðum jöfnunum á formið '+Yv+' = <var>h</var>'+Xv+' + <var>k</var> og settu hægri hliðarnar jafnar.</p>');
+  else out.push('<p>Í skurðpunktinum hafa báðar línurnar sama '+Xv+' og sama '+Yv+'. Báðar jöfnurnar eru á forminu '+Yv+' = <var>h</var>'+Xv+' + <var>k</var>, svo þú getur sett hægri hliðarnar jafnar.</p>');
   var n=prob.sol.length;
   prob.sol.forEach(function(s,i){
     if(i===n-1&&!prob.par)return;
