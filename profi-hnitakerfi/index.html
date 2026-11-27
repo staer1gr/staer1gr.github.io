@@ -362,6 +362,16 @@ function parseNum(raw,allowUnd){
   return null;
 }
 function isF(v){return v&&typeof v.n==="number"}
+/* hnit punkts í einum reit: «3, -2», «3,-2», «(3, -2)», «P = (3; -2)» – skilar [F, F] eða null */
+function parsePt(raw){
+  var s=String(raw).trim().replace(/[−–—]/g,"-").replace(/^[a-zA-Z]\s*=\s*/,"").replace(/^\(\s*|\s*\)$/g,"").trim();
+  if(!s)return null;
+  var p=s.split(/\s*[,;]\s*/);
+  if(p.length!==2)p=s.split(/\s+/);
+  if(p.length!==2)return null;
+  var a=parseNum(p[0]),b=parseNum(p[1]);
+  return isF(a)&&isF(b)?[a,b]:null;
+}
 /* línuleg segð í x og y: {x, y, c} */
 function parseLin(s){
   var toks=s.match(/\d*\.\d+|\d+|[xy]|[+\-*/()]|./g)||[];
@@ -512,10 +522,11 @@ function genPt(){
   return{cat:"pt",x:x,y:y,s:s,
     q:"Hver eru hnit punktsins "+V("P")+"?"+(s!==1?" Athugaðu kvarðann á ásunum.":""),
     plot:plot({s:s,pts:[{p:[x,y],lab:"P"}]}),
-    fields:[["x",V("x")],["y",V("y")]],
+    fields:[["p",V("P"),"t.d. 3, −2"]],
     check:function(vals){
-      var a=parseNum(vals[0]),b=parseNum(vals[1]);
-      if(!isF(a)||!isF(b))return{ok:false,why:vals[0]||vals[1]?"Svarið þarf að vera tala í báðum reitum.":""};
+      var pp=parsePt(vals[0]);
+      if(!pp)return{ok:false,why:vals[0]?"Skrifaðu bæði hnitin með kommu á milli, t.d. 3, −2.":""};
+      var a=pp[0],b=pp[1];
       if(feq(a,F(x))&&feq(b,F(y)))return{ok:true};
       if(feq(a,F(y))&&feq(b,F(x)))return{ok:false,why:"Þú víxlaðir hnitunum. "+V("x")+"-hnitið (til hægri eða vinstri) kemur alltaf fyrst."};
       if(s!==1&&a.d===1&&b.d===1&&a.n*s===x&&b.n*s===y)return{ok:false,why:"Þú taldir strikin en gleymdir kvarðanum: hvert strik er "+s+", ekki 1."};
@@ -535,7 +546,7 @@ function genSl(){
   for(;;){
     if(kind===1){A=[ri(0,8),ri(0,8)];B=[ri(0,8),ri(0,8)]}
     else if(kind===2){A=[ri(-7,7),ri(-7,7)];B=[ri(-7,7),ri(-7,7)]}
-    else if(kind===3){var c=ri(-7,7),a=ri(-7,7),b;do{b=ri(-7,7)}while(b===a);if(chance(.5)){A=[c,a];B=[c,b]}else{A=[a,c];B=[b,c]}}
+    else if(kind===3){var c=ri(-7,7),a=ri(-7,7),b;do{b=ri(-7,7)}while(b===a);A=[a,c];B=[b,c]}
     else{var s1=pick([5,10]),t1=pick([5,5,10]);A=[s1*ri(-4,4),t1*ri(-5,5)];B=[s1*ri(-4,4),t1*ri(-5,5)]}
     dx=B[0]-A[0];dy=B[1]-A[1];
     if(dx===0&&dy===0)continue;
@@ -945,21 +956,15 @@ function genSs(){
     steps.push(rel==="perp"?"Línurnar eru <strong>hornréttar</strong>.":"Hallatölurnar eru ekki jafnar og margfeldið er ekki −1: <strong>hvorugt</strong>.");
   }
   return{cat:"ss",ss:true,
-    q:'<span class="small" style="margin-bottom:.35rem">Finndu hallatölu beggja línanna. Eru þær samsíða, hornréttar eða hvorugt?</span>'+lns(eqH(A.h,A.k),eqH(B.h,B.k)),
+    q:'<span class="small" style="margin-bottom:.35rem">Eru línurnar samsíða, hornréttar eða hvorugt?</span>'+lns(eqH(A.h,A.k),eqH(B.h,B.k)),
     plot:null,
-    fields:[["h1",H1,"t.d. −3/4"],["h2",H2,"t.d. 4/3"]],
+    fields:[],
     check:function(vals,st){
-      if(!vals[0]&&!vals[1]&&!st.rel)return{ok:false};
-      var a=parseNum(vals[0]),b=parseNum(vals[1]);
-      var oka=isF(a)&&feq(a,A.h),okb=isF(b)&&feq(b,B.h),okr=st.rel===rel;
-      if(oka&&okb&&okr)return{ok:true};
-      var w=[];
-      if(!oka)w.push("Hallatala línu 1 er ekki rétt.");
-      if(!okb)w.push("Hallatala línu 2 er ekki rétt.");
-      if(!okr)w.push(st.rel?"Afstaðan er ekki rétt.":"Þú valdir ekki samsíða, hornréttar eða hvorugt.");
-      return{ok:false,why:w.join(" ")};
+      if(!st.rel)return{ok:false};
+      if(st.rel===rel)return{ok:true};
+      return{ok:false,why:"Afstaðan er ekki rétt. Berðu saman hallatölurnar: jafnar → samsíða, margfeldið −1 → hornréttar."};
     },
-    shown:function(vals,st){return "<i>"+H1+" = "+esc(vals[0]||"?")+", &nbsp;"+H2+" = "+esc(vals[1]||"?")+", &nbsp;"+(st.rel?NM[st.rel]:"?")+"</i>"},
+    shown:function(vals,st){return "<i>"+(st.rel?NM[st.rel]:"ósvarað")+"</i>"},
     ansH:H1+" = "+valH(A.h)+", &nbsp;"+H2+" = "+valH(B.h)+" &nbsp;→&nbsp; "+NM[rel],
     steps:steps
   };
@@ -1010,7 +1015,7 @@ function filled(i){
   var p=exam[i],st=ST[i],v=valsOf(i);
   if(p.tl)return st.pts.length===2;
   if(p.sa)return v[0].length>0&&(st.tog||v[1].length>0);
-  if(p.ss)return v[0].length>0&&v[1].length>0&&!!st.rel;
+  if(p.ss)return !!st.rel;
   if(p.tog&&st.tog)return true;
   return v.every(function(s){return s.length>0});
 }
@@ -1052,10 +1057,12 @@ function renderSheet(){
            '<input type="text" data-q="'+i+'" data-k="x" autocomplete="off" spellcheck="false" aria-label="Skurðpunktur við x-ás" placeholder="svar"><span class="pt">, 0)</span></span>'+
            '<button class="tog" type="button" data-tog="'+i+'" aria-pressed="false">'+p.tog+"</button></div>";
       }else{
-        h+='<div class="qin'+(p.fields.length>1?" two":"")+(p.tog?" wrap2":"")+'">';
-        p.fields.forEach(function(f){h+=inp(i,f[0],f[1],f[2])});
-        if(p.tog)h+='<button class="tog" type="button" data-tog="'+i+'" aria-pressed="false">'+p.tog+"</button>";
-        h+="</div>";
+        if(p.fields.length||p.tog){
+          h+='<div class="qin'+(p.fields.length>1?" two":"")+(p.tog?" wrap2":"")+'">';
+          p.fields.forEach(function(f){h+=inp(i,f[0],f[1],f[2])});
+          if(p.tog)h+='<button class="tog" type="button" data-tog="'+i+'" aria-pressed="false">'+p.tog+"</button>";
+          h+="</div>";
+        }
         if(p.ss)h+='<div class="rels">'+[["par","Samsíða"],["perp","Hornréttar"],["nei","Hvorugt"]].map(function(r){
           return '<button class="tog" type="button" data-rel="'+i+'" data-r="'+r[0]+'" aria-pressed="false">'+r[1]+"</button>"}).join("")+"</div>";
       }
